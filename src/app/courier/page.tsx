@@ -8,7 +8,7 @@ import Map, { MapMarker } from "@/components/Map";
 import { Spinner, StatusBadge, vehicleEmoji } from "@/components/ui";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
-import { supabase } from "@/lib/supabase";
+import { supabase, T } from "@/lib/supabase";
 import { beep, errKey, useSettings } from "@/lib/hooks";
 import { haversineKm, money } from "@/lib/geo";
 import { ACTIVE, Shipment } from "@/lib/types";
@@ -34,7 +34,7 @@ export default function CourierHome() {
   const load = useCallback(async () => {
     if (!uid) return;
     const [{ data: o }, { data: a }, { data: l }] = await Promise.all([
-      supabase.from("shipment_offers").select("id,distance_km,status,created_at,shipments(*)").eq("courier_id", uid).eq("status", "pending").order("created_at", { ascending: false }),
+      supabase.from("shipment_offers").select(`id,distance_km,status,created_at,shipments:${T("shipments")}(*)`).eq("courier_id", uid).eq("status", "pending").order("created_at", { ascending: false }),
       supabase.from("shipments").select("*").eq("courier_id", uid).in("status", ACTIVE).maybeSingle(),
       supabase.from("ledger").select("amount").eq("courier_id", uid).eq("kind", "courier_earning").gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
     ]);

@@ -25,7 +25,7 @@ function SignupForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setErr("");
     const { email, password, ...meta } = f;
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { ...meta, role } } });
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { ...meta, role, app: "wasel" } } });
     if (error) setErr(error.message);
     else if (!data.session) setMsg("✓ Check your email to confirm your account.");
     setBusy(false);
