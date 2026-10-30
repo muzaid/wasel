@@ -56,7 +56,7 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
 2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). Every table, function and the storage bucket is prefixed with `wasel_`, so it can safely share a Supabase project with your other apps.
 3. (Recommended) **Database → Extensions → pg_cron**, then run:
    ```sql
-   select cron.schedule('wasel-dispatch-tick', '* * * * *', $$select dispatch_tick()$$);
+   select cron.schedule('wasel-dispatch-tick', '* * * * *', $$select wasel_dispatch_tick()$$);
    ```
 4. For quick testing, disable "Confirm email" in **Authentication → Providers → Email**.
 5. Locally:
@@ -67,7 +67,7 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
    ```
 6. Sign up, then make yourself admin:
    ```sql
-   update profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
+   update wasel_profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
    ```
 7. Approve couriers from **Admin → Couriers** (unapproved couriers can't go online).
 
