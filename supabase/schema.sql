@@ -4,6 +4,24 @@
 -- =====================================================================
 create extension if not exists pgcrypto;
 
+-- ---------- Safety check ----------
+-- Wasel must run in its OWN Supabase project. If another app's tables with the same names
+-- (profiles, shipments, ...) already exist here, stop with a clear message instead of breaking either app.
+do $$
+declare t text; clash text[] := '{}';
+begin
+  foreach t in array array['profiles','businesses','couriers','settings','shipments','shipment_offers','shipment_events',
+                           'courier_locations','ratings','ledger','notifications','saved_addresses'] loop
+    if to_regclass('public.' || t) is not null
+       and coalesce(obj_description(to_regclass('public.' || t), 'pg_class'), '') <> 'wasel' then
+      clash := clash || t;
+    end if;
+  end loop;
+  if array_length(clash, 1) > 0 then
+    raise exception 'This Supabase project already has tables from another app: %. Create a NEW Supabase project for Wasel and run this script there.', array_to_string(clash, ', ');
+  end if;
+end $$;
+
 -- ---------- Types ----------
 do $$ begin
   create type user_role as enum ('business','courier','admin');
@@ -192,6 +210,20 @@ create table if not exists saved_addresses (
   phone text
 );
 
+-- mark tables as owned by Wasel (lets the safety check allow re-runs)
+comment on table profiles is 'wasel';
+comment on table businesses is 'wasel';
+comment on table couriers is 'wasel';
+comment on table settings is 'wasel';
+comment on table shipments is 'wasel';
+comment on table shipment_offers is 'wasel';
+comment on table shipment_events is 'wasel';
+comment on table courier_locations is 'wasel';
+comment on table ratings is 'wasel';
+comment on table ledger is 'wasel';
+comment on table notifications is 'wasel';
+comment on table saved_addresses is 'wasel';
+
 -- ---------- Helpers ----------
 create or replace function is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
@@ -233,7 +265,7 @@ begin
 end $$;
 
 -- ---------- New user → profile ----------
-create or replace function handle_new_user() returns trigger
+create or replace function wasel_handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare r user_role;
 begin
@@ -251,8 +283,8 @@ begin
   end if;
   return new;
 end $$;
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users for each row execute function handle_new_user();
+drop trigger if exists wasel_on_auth_user_created on auth.users;
+create trigger wasel_on_auth_user_created after insert on auth.users for each row execute function wasel_handle_new_user();
 
 -- Prevent users from escalating their own role / verification / stats
 create or replace function guard_profile() returns trigger language plpgsql set search_path = public as $$
