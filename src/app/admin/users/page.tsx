@@ -4,7 +4,7 @@ import AppShell from "@/components/AppShell";
 import { Spinner } from "@/components/ui";
 import { useRequireRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { supabase } from "@/lib/supabase";
+import { supabase, T } from "@/lib/supabase";
 import type { Profile, Role } from "@/lib/types";
 
 export default function AdminUsers() {
@@ -14,7 +14,7 @@ export default function AdminUsers() {
   const [q, setQ] = useState("");
   const [role, setRole] = useState<Role | "">("");
 
-  const load = () => supabase.from("profiles").select("*, businesses(business_name)").order("created_at", { ascending: false })
+  const load = () => supabase.from("profiles").select(`*, businesses:${T("businesses")}(business_name)`).order("created_at", { ascending: false })
     .then(({ data }) => setRows((data as never) ?? []));
   useEffect(() => { if (ok) load(); }, [ok]);
   const list = useMemo(() => (rows ?? []).filter((r) => (!role || r.role === role) &&

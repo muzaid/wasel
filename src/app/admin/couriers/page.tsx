@@ -4,7 +4,7 @@ import AppShell from "@/components/AppShell";
 import { Spinner, vehicleEmoji } from "@/components/ui";
 import { useRequireRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { supabase } from "@/lib/supabase";
+import { supabase, T } from "@/lib/supabase";
 import type { Courier, Profile } from "@/lib/types";
 
 type Row = Courier & { profiles: Profile };
@@ -15,7 +15,7 @@ export default function AdminCouriers() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
 
-  const load = () => supabase.from("couriers").select("*, profiles(*)").then(({ data }) => setRows((data as unknown as Row[]) ?? []));
+  const load = () => supabase.from("couriers").select(`*, profiles:${T("profiles")}(*)`).then(({ data }) => setRows((data as unknown as Row[]) ?? []));
   useEffect(() => { if (ok) load(); }, [ok]);
   if (!ok || !rows) return <AppShell wide><Spinner /></AppShell>;
 
