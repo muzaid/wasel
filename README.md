@@ -53,7 +53,7 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
 ## Setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql).
+2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). Every table, function and the storage bucket is prefixed with `wasel_`, so it can safely share a Supabase project with your other apps.
 3. (Recommended) **Database → Extensions → pg_cron**, then run:
    ```sql
    select cron.schedule('wasel-dispatch-tick', '* * * * *', $$select dispatch_tick()$$);
