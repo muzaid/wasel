@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Upload } from "lucide-react";
+import { CheckCircle2, Upload, UserRound } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import PhotoUpload from "@/components/PhotoUpload";
 import { Spinner, vehicleEmoji } from "@/components/ui";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
@@ -28,19 +29,18 @@ export default function CourierProfile() {
     await supabase.from("couriers").update({ vehicle: f.vehicle, vehicle_model: f.vehicle_model, vehicle_color: f.vehicle_color, plate_number: f.plate_number }).eq("id", uid);
     await refresh(); setMsg(t("saved")); setTimeout(() => setMsg(""), 2000);
   };
-  const up = async (field: "avatar_url" | "id_doc_url" | "license_doc_url", file?: File) => {
+  const up = async (field: "id_doc_url" | "license_doc_url", file?: File) => {
     if (!file) return;
     setUploading(field);
     try {
       const url = await uploadFile(uid, file, field);
-      if (field === "avatar_url") await supabase.from("profiles").update({ avatar_url: url }).eq("id", uid);
-      else await supabase.from("couriers").update({ [field]: url }).eq("id", uid);
+      await supabase.from("couriers").update({ [field]: url }).eq("id", uid);
       await refresh();
     } finally { setUploading(""); }
   };
 
-  const docs: [("avatar_url" | "id_doc_url" | "license_doc_url"), TKey, string | null][] = [
-    ["avatar_url", "avatar", profile.avatar_url], ["id_doc_url", "id_doc", courier.id_doc_url], ["license_doc_url", "license_doc", courier.license_doc_url],
+  const docs: [("id_doc_url" | "license_doc_url"), TKey, string | null][] = [
+    ["id_doc_url", "id_doc", courier.id_doc_url], ["license_doc_url", "license_doc", courier.license_doc_url],
   ];
   const vstyle = { pending: "bg-amber-50 text-amber-700", approved: "bg-brand-50 text-brand-700", rejected: "bg-red-50 text-red-700" }[courier.verification];
 
@@ -49,6 +49,11 @@ export default function CourierProfile() {
       <div className="mb-5 flex items-center gap-3">
         <h1 className="text-2xl font-extrabold">{t("profile")}</h1>
         <span className={`chip ${vstyle}`}>{t("verification")}: {t(courier.verification)}</span>
+      </div>
+      <div className="card mb-6 p-5">
+        <PhotoUpload userId={uid} url={profile.avatar_url} folder="avatar" size={104}
+          placeholder={<UserRound className="h-9 w-9" />} label={t("your_photo")} hint={t("photo_hint")}
+          onUploaded={async (url) => { await supabase.from("profiles").update({ avatar_url: url }).eq("id", uid); await refresh(); }} />
       </div>
       <div className="grid gap-6 md:grid-cols-2">
         <div className="card space-y-3 p-5">

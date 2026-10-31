@@ -2,14 +2,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, KeyRound, PackageSearch } from "lucide-react";
 import Map, { MapMarker } from "@/components/Map";
-import { CourierCard, LangSwitch, Logo, Progress, Spinner, Stars, Timeline, vehicleEmoji } from "@/components/ui";
+import { Avatar, CourierCard, LangSwitch, Logo, Progress, Spinner, Stars, Timeline, vehicleEmoji } from "@/components/ui";
 import { useI18n, TKey } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 import { etaMin, haversineKm, money } from "@/lib/geo";
 import type { ShipmentStatus, Vehicle } from "@/lib/types";
 
 interface Tracking {
-  code: string; status: ShipmentStatus; business_name: string; recipient_name: string; cod_amount: number; delivery_otp: string | null;
+  code: string; status: ShipmentStatus; business_name: string; business_logo: string | null; recipient_name: string; cod_amount: number; delivery_otp: string | null;
   pickup: { address: string; lat: number; lng: number }; dropoff: { address: string; lat: number; lng: number };
   courier: null | { name: string; phone: string | null; avatar_url: string | null; vehicle: Vehicle; vehicle_model: string | null; vehicle_color: string | null; plate_number: string | null; rating: number; deliveries: number; lat: number | null; lng: number | null; last_seen_at: string | null };
   events: { status: ShipmentStatus; at: string }[]; rated: boolean;
@@ -59,7 +59,7 @@ export default function Track({ params }: { params: { token: string } }) {
       <div className="mx-auto max-w-xl space-y-4 p-4">
         <div className="card p-5">
           <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>{d.business_name} · #{d.code}</span>
+            <span className="flex items-center gap-2"><Avatar src={d.business_logo} name={d.business_name} size={28} square /><span><b className="text-ink-900">{d.business_name}</b> · #{d.code}</span></span>
             {!delivered && c && <span className="chip bg-red-50 text-red-600"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />{t("live")}</span>}
           </div>
           <div className="mt-2 flex items-end justify-between gap-3">
