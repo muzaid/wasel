@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, Bike } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, explainError } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
 import { useAuth, homeFor } from "@/lib/auth";
 import type { Vehicle } from "@/lib/types";
@@ -26,7 +26,7 @@ function SignupForm() {
     e.preventDefault(); setBusy(true); setErr("");
     const { email, password, ...meta } = f;
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { ...meta, role, app: "wasel" } } });
-    if (error) setErr(error.message);
+    if (error) setErr(explainError(error.message));
     else if (!data.session) setMsg("✓ Check your email to confirm your account.");
     setBusy(false);
   };

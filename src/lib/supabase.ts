@@ -5,6 +5,20 @@ const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder";
 
 export const isConfigured = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+/** Detects the common setup mistakes so the UI can say exactly what is wrong. */
+export const configProblem: null | "missing" | "bad_url" = !isConfigured
+  ? "missing"
+  : /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url) ? null : "bad_url";
+export const SUPABASE_URL_IN_USE = url;
+
+/** Turns a raw network error into an actionable message. */
+export function explainError(msg: string) {
+  if (/failed to fetch|networkerror|load failed|fetch failed/i.test(msg)) {
+    return `Cannot reach Supabase at ${url}. Check NEXT_PUBLIC_SUPABASE_URL (it must look like https://xxxx.supabase.co), make sure the project is not paused in the Supabase dashboard, then restart / redeploy the app.`;
+  }
+  return msg;
+}
+
 /**
  * Every Wasel table and function in the database is prefixed with `wasel_`, so Wasel can share
  * a Supabase project with other apps without name clashes. The app code uses the short names

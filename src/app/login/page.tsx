@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, explainError } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
 import { useAuth, homeFor } from "@/lib/auth";
 import { LangSwitch, Logo } from "@/components/ui";
@@ -20,7 +20,7 @@ export default function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setErr("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setErr(error.message);
+    if (error) setErr(explainError(error.message));
     setBusy(false);
   };
 
