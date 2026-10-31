@@ -173,6 +173,18 @@ export function ShareTracking({ token, recipientPhone, code }: { token: string; 
   );
 }
 
+/** Round photo with initials fallback (or a square logo when `square`). */
+export function Avatar({ src, name, size = 36, square = false }: { src?: string | null; name?: string | null; size?: number; square?: boolean }) {
+  const initials = (name || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const r = square ? "rounded-xl" : "rounded-full";
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" className={`${r} shrink-0 border border-slate-200 bg-white ${square ? "object-contain p-0.5" : "object-cover"}`} style={{ width: size, height: size }} />
+  ) : (
+    <span className={`${r} grid shrink-0 place-items-center bg-brand-100 font-bold text-brand-700`} style={{ width: size, height: size, fontSize: size * 0.38 }}>{initials}</span>
+  );
+}
+
 export function Empty({ icon, title, action }: { icon: React.ReactNode; title: string; action?: React.ReactNode }) {
   return (
     <div className="card flex flex-col items-center gap-3 px-6 py-12 text-center">

@@ -11,7 +11,7 @@ export interface Courier {
   is_online: boolean; lat: number | null; lng: number | null; heading: number | null; last_seen_at: string | null;
   rating_avg: number; rating_count: number; total_deliveries: number;
 }
-export interface Business { id: string; business_name: string; address: string | null; lat: number | null; lng: number | null }
+export interface Business { id: string; business_name: string; logo_url: string | null; address: string | null; lat: number | null; lng: number | null }
 export interface Settings {
   platform_fee: number; base_fare: number; per_km: number; min_fare: number;
   size_mult: Record<PackageSize, number>; vehicle_mult: Record<Vehicle, number>;
