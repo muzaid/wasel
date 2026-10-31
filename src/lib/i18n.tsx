@@ -54,6 +54,7 @@ const en = {
   saved_addresses: "Saved addresses", save_address: "Save this address", label: "Label",
   sound_on: "Enable alerts", how_it_works: "How it works", h1: "Post", h1d: "Enter pickup, drop-off and package. Price shows instantly.", h2: "Match", h2d: "Nearest couriers get it; first to accept wins.", h3: "Track", h3d: "You and your customer follow the courier live.",
   start_now: "Start now", become_courier: "Drive with Wasel", stats_label: "Platform", per_shipment: "per shipment",
+  your_photo: "Your photo", photo_hint: "A clear face photo — customers see it when you deliver", business_logo: "Business logo", logo_hint: "Shown to couriers and on your customers' tracking page", change_photo: "Change", add_logo_nudge: "Add your business logo so customers recognise your deliveries", sender: "Sender",
 };
 
 type Dict = typeof en;
@@ -109,6 +110,7 @@ const ar: Dict = {
   saved_addresses: "العناوين المحفوظة", save_address: "احفظ العنوان", label: "التسمية",
   sound_on: "تفعيل التنبيهات", how_it_works: "كيف بيشتغل", h1: "انشر", h1d: "أدخل الاستلام والتسليم والطرد. السعر بيظهر فوراً.", h2: "مطابقة", h2d: "أقرب المناديب بيوصلهم الطلب؛ أول واحد بيقبل بياخده.", h3: "تتبع", h3d: "إنت وزبونك بتتابعوا المندوب مباشرة.",
   start_now: "ابدأ الآن", become_courier: "اشتغل مندوب مع واصل", stats_label: "المنصة", per_shipment: "لكل شحنة",
+  your_photo: "صورتك الشخصية", photo_hint: "صورة واضحة للوجه — بتظهر للزبون وقت التوصيل", business_logo: "شعار المصلحة", logo_hint: "بيظهر للمناديب وبصفحة تتبع زبائنك", change_photo: "تغيير", add_logo_nudge: "أضف شعار مصلحتك عشان زبائنك يعرفوا شحناتك", sender: "المرسل",
 };
 
 const he: Dict = {
@@ -162,6 +164,7 @@ const he: Dict = {
   saved_addresses: "כתובות שמורות", save_address: "שמור כתובת", label: "תווית",
   sound_on: "הפעל התראות", how_it_works: "איך זה עובד", h1: "פרסם", h1d: "הזינו איסוף, מסירה וחבילה. המחיר מופיע מיד.", h2: "התאמה", h2d: "השליחים הקרובים מקבלים; הראשון שמאשר לוקח.", h3: "מעקב", h3d: "אתם והלקוח עוקבים אחרי השליח בזמן אמת.",
   start_now: "התחילו עכשיו", become_courier: "הצטרפו כשליחים", stats_label: "פלטפורמה", per_shipment: "למשלוח",
+  your_photo: "התמונה שלך", photo_hint: "תמונת פנים ברורה — הלקוח רואה אותה במסירה", business_logo: "לוגו העסק", logo_hint: "מוצג לשליחים ובדף המעקב של הלקוחות", change_photo: "החלף", add_logo_nudge: "הוסיפו את לוגו העסק כדי שהלקוחות יזהו את המשלוחים", sender: "שולח",
 };
 
 const dicts: Record<Lang, Dict> = { ar, en, he };
