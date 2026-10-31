@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PackagePlus, Package } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import ShipmentRow from "@/components/ShipmentRow";
-import { Empty, Spinner } from "@/components/ui";
+import { Avatar, Empty, Spinner } from "@/components/ui";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
@@ -39,13 +39,21 @@ export default function BusinessHome() {
   return (
     <AppShell>
       <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <div className="text-sm text-slate-500">{t("dashboard")}</div>
-          <h1 className="text-2xl font-extrabold">{business?.business_name || t("business")}</h1>
+        <div className="flex items-center gap-3">
+          <Avatar src={business?.logo_url} name={business?.business_name} size={52} square />
+          <div>
+            <div className="text-sm text-slate-500">{t("dashboard")}</div>
+            <h1 className="text-2xl font-extrabold">{business?.business_name || t("business")}</h1>
+          </div>
         </div>
         <Link href="/business/new" className="btn-primary px-5 py-3"><PackagePlus className="h-5 w-5" />{t("new_shipment")}</Link>
       </div>
 
+      {!business?.logo_url && (
+        <Link href="/business/profile" className="mb-6 flex items-center justify-between gap-3 rounded-2xl bg-brand-50 p-4 text-sm font-semibold text-brand-800">
+          <span>🏪 {t("add_logo_nudge")}</span><span className="underline">{t("upload")}</span>
+        </Link>
+      )}
       <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
         <div className="stat"><div className="stat-label">{t("active")}</div><div className="stat-value text-brand-600">{active.length}</div></div>
         <div className="stat"><div className="stat-label">{t("delivered_count")}</div><div className="stat-value">{delivered.length}</div></div>

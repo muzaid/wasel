@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
-import { Spinner } from "@/components/ui";
+import { Avatar, Spinner } from "@/components/ui";
 import { useRequireRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { supabase, T } from "@/lib/supabase";
@@ -10,11 +10,11 @@ import type { Profile, Role } from "@/lib/types";
 export default function AdminUsers() {
   const ok = useRequireRole("admin");
   const { t, lang } = useI18n();
-  const [rows, setRows] = useState<(Profile & { businesses: { business_name: string } | null })[] | null>(null);
+  const [rows, setRows] = useState<(Profile & { businesses: { business_name: string; logo_url: string | null } | null })[] | null>(null);
   const [q, setQ] = useState("");
   const [role, setRole] = useState<Role | "">("");
 
-  const load = () => supabase.from("profiles").select(`*, businesses:${T("businesses")}(business_name)`).order("created_at", { ascending: false })
+  const load = () => supabase.from("profiles").select(`*, businesses:${T("businesses")}(business_name, logo_url)`).order("created_at", { ascending: false })
     .then(({ data }) => setRows((data as never) ?? []));
   useEffect(() => { if (ok) load(); }, [ok]);
   const list = useMemo(() => (rows ?? []).filter((r) => (!role || r.role === role) &&
@@ -38,7 +38,12 @@ export default function AdminUsers() {
           <tbody>
             {list.map((r) => (
               <tr key={r.id} className={`border-t ${r.is_blocked ? "bg-red-50/50" : ""}`}>
-                <td className="p-3 font-semibold">{r.full_name}{r.businesses?.business_name && <div className="text-xs font-normal text-slate-500">{r.businesses.business_name}</div>}</td>
+                <td className="p-3 font-semibold">
+                  <div className="flex items-center gap-3">
+                    {r.businesses?.logo_url ? <Avatar src={r.businesses.logo_url} name={r.businesses.business_name} size={36} square /> : <Avatar src={r.avatar_url} name={r.full_name} size={36} />}
+                    <div>{r.full_name}{r.businesses?.business_name && <div className="text-xs font-normal text-slate-500">{r.businesses.business_name}</div>}</div>
+                  </div>
+                </td>
                 <td className="p-3" dir="ltr">{r.phone}</td>
                 <td className="p-3"><span className="chip bg-slate-100">{t(r.role)}</span></td>
                 <td className="p-3 text-slate-500">{new Date(r.created_at).toLocaleDateString(lang === "en" ? "en-GB" : lang)}</td>

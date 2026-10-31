@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 import type { Notification, Role } from "@/lib/types";
-import { LangSwitch, Logo } from "./ui";
+import { Avatar, LangSwitch, Logo } from "./ui";
 
 type NavItem = { href: string; label: TKey; icon: ReactNode };
 const NAV: Record<Role, NavItem[]> = {
@@ -103,7 +103,7 @@ function Bell_() {
 }
 
 export default function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  const { profile, signOut } = useAuth();
+  const { profile, business, signOut } = useAuth();
   const { t } = useI18n();
   const path = usePathname();
   const router = useRouter();
@@ -127,6 +127,13 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
           <div className="ms-auto flex items-center gap-1">
             <LangSwitch />
             {profile && <Bell_ />}
+            {profile && (
+              <Link href={profile.role === "admin" ? "/admin" : `/${profile.role}/profile`} className="ms-1" title={profile.full_name}>
+                {profile.role === "business" && business?.logo_url
+                  ? <Avatar src={business.logo_url} name={business.business_name} size={34} square />
+                  : <Avatar src={profile.avatar_url} name={profile.full_name} size={34} />}
+              </Link>
+            )}
             {profile && (
               <button onClick={async () => { await signOut(); router.replace("/"); }} className="grid h-10 w-10 place-items-center rounded-full hover:bg-slate-100" title={t("logout")}>
                 <LogOut className="h-5 w-5 rtl:rotate-180" />

@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Store, Trash2, UserRound } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import Map from "@/components/Map";
+import PhotoUpload from "@/components/PhotoUpload";
 import { Spinner } from "@/components/ui";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -35,6 +36,14 @@ export default function BusinessProfile() {
   return (
     <AppShell>
       <h1 className="mb-5 text-2xl font-extrabold">{t("profile")}</h1>
+      <div className="card mb-6 grid gap-6 p-5 sm:grid-cols-2">
+        <PhotoUpload userId={session!.user.id} url={business?.logo_url} folder="logo" shape="square" size={96}
+          placeholder={<Store className="h-8 w-8" />} label={t("business_logo")} hint={t("logo_hint")}
+          onUploaded={async (url) => { await supabase.from("businesses").update({ logo_url: url }).eq("id", session!.user.id); await refresh(); }} />
+        <PhotoUpload userId={session!.user.id} url={profile?.avatar_url} folder="avatar" size={96}
+          placeholder={<UserRound className="h-8 w-8" />} label={t("your_photo")}
+          onUploaded={async (url) => { await supabase.from("profiles").update({ avatar_url: url }).eq("id", session!.user.id); await refresh(); }} />
+      </div>
       <div className="grid gap-6 md:grid-cols-2">
         <div className="card space-y-3 p-5">
           <div><label className="label">{t("business_name")}</label><input className="input" value={f.business_name} onChange={(e) => setF({ ...f, business_name: e.target.value })} /></div>
