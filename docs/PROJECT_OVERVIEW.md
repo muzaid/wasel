@@ -1,6 +1,6 @@
 # Wasel (واصل) — Project Overview
 
-Multi-sided on-demand delivery marketplace for Palestine (₪, Arabic-first, English & Hebrew).
+Multi-sided on-demand delivery marketplace for Israel (₪, Arabic-first, English & Hebrew).
 Anyone — a person or a business — requests a delivery; the nearest suitable courier takes it; everyone tracks it live.
 
 ## Delivery relationships (one shared engine)

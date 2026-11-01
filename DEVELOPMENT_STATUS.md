@@ -21,5 +21,9 @@ To deploy this phase
 1. Supabase SQL Editor → run `supabase/migrations/003_marketplace_foundation.sql`
 2. Redeploy on Vercel
 
+## Test data & location
+- `supabase/seed/seed_test_data.sql`: 15 test accounts (password `Wasel123!`) and 22 deliveries in Israeli cities; re-runnable
+- Maps default to Tel Aviv and centre on the user's GPS when allowed; address search limited to Israel
+
 ## Next: Phase 2 — Profiles & verification
 Phone OTP, password reset screen, business documents + admin approval, courier vehicles table (multiple vehicles, capacity, photos, approval), configurable verification rules.

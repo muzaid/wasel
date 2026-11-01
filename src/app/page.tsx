@@ -66,7 +66,7 @@ export default function Home() {
         </header>
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-20 pt-8 md:grid-cols-2 md:pt-16">
           <div>
-            <span className="chip mb-5 bg-white/10 text-brand-400">₪ · Palestine · {t("live")}</span>
+            <span className="chip mb-5 bg-white/10 text-brand-400">₪ · Israel · {t("live")}</span>
             <h1 className="text-4xl font-extrabold leading-tight md:text-5xl">{t("tagline")}</h1>
             <p className="mt-5 max-w-lg text-lg text-slate-300">{t("hero_sub")}</p>
             <div className="mt-8 flex flex-wrap gap-3">

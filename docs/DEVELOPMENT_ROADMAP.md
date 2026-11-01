@@ -14,7 +14,7 @@
 
 ## External services & credentials needed
 - Supabase project (have) — enable **pg_cron**; optional **PostGIS** (P4); phone auth + SMS provider (P2)
-- Payment provider for Palestine/Israel (P7) — to be chosen by you
+- Payment provider for Israel (P7) — to be chosen by you
 - Push: VAPID keys (Web Push) or Firebase project (P5)
 - Optional paid map tiles for scale (`NEXT_PUBLIC_MAP_TILES_URL`)
 

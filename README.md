@@ -2,7 +2,7 @@
 
 Delivery marketplace for **B2C, C2C and B2B**: businesses deliver to customers, people send to people, businesses ship to businesses — one engine, one account with many roles. Uber-style dispatch for **shipments**. A business posts a shipment → the app alerts the **nearest X online couriers** → the **first to accept** gets it at a **fixed upfront price** → the recipient gets a **live tracking link** with the courier's location, name, rating and vehicle. The platform (admin) earns a configurable **1–2 ₪ per delivered shipment**.
 
-Arabic-first (RTL) with English & Hebrew, installable as a PWA on Android/iOS.
+Built for Israel (₪). Arabic-first (RTL) with English & Hebrew, installable as a PWA on Android/iOS.
 
 ## Features
 
@@ -70,6 +70,7 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
    select wasel_make_admin('you@example.com');
    ```
 7. Approve couriers from **Admin → Couriers** (unapproved couriers can't go online).
+8. (Optional) **Test data**: run [`supabase/seed/seed_test_data.sql`](supabase/seed/seed_test_data.sql) in the SQL Editor. It creates 15 accounts in Israeli cities (Tel Aviv, Ramat Gan, Petah Tikva, Jerusalem, Haifa) with B2C, C2C and B2B deliveries. All passwords: `Wasel123!` — e.g. `admin@wasel.test`, `cafe@wasel.test`, `noa@wasel.test`, `avi@wasel.test`. Re-running it resets the test data.
 
 **Test the full loop:** open three browsers — business, courier (allow location), and the tracking link.
 
