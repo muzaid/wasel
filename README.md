@@ -1,6 +1,6 @@
 # Wasel · واصل — Courier on demand
 
-Uber-style dispatch for **shipments**. A business posts a shipment → the app alerts the **nearest X online couriers** → the **first to accept** gets it at a **fixed upfront price** → the recipient gets a **live tracking link** with the courier's location, name, rating and vehicle. The platform (admin) earns a configurable **1–2 ₪ per delivered shipment**.
+Delivery marketplace for **B2C, C2C and B2B**: businesses deliver to customers, people send to people, businesses ship to businesses — one engine, one account with many roles. Uber-style dispatch for **shipments**. A business posts a shipment → the app alerts the **nearest X online couriers** → the **first to accept** gets it at a **fixed upfront price** → the recipient gets a **live tracking link** with the courier's location, name, rating and vehicle. The platform (admin) earns a configurable **1–2 ₪ per delivered shipment**.
 
 Arabic-first (RTL) with English & Hebrew, installable as a PWA on Android/iOS.
 
@@ -53,7 +53,7 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
 ## Setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). Every table, function and the storage bucket is prefixed with `wasel_`, so it can safely share a Supabase project with your other apps.
+2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql), then each file in [`supabase/migrations/`](supabase/migrations) in order (002, 003, …). Every table, function and the storage bucket is prefixed with `wasel_`, so it can safely share a Supabase project with your other apps.
 3. (Recommended) **Database → Extensions → pg_cron**, then run:
    ```sql
    select cron.schedule('wasel-dispatch-tick', '* * * * *', $$select wasel_dispatch_tick()$$);
@@ -65,9 +65,9 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
    npm install
    npm run dev
    ```
-6. Sign up, then make yourself admin:
+6. Sign up, then make yourself admin in the SQL Editor:
    ```sql
-   update wasel_profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
+   select wasel_make_admin('you@example.com');
    ```
 7. Approve couriers from **Admin → Couriers** (unapproved couriers can't go online).
 
@@ -84,3 +84,8 @@ Import the repo, add the three env vars from `.env.example` (set `NEXT_PUBLIC_SI
 
 ## Roadmap ideas
 Online payments (card / wallet top-up), multi-drop routes, courier heat-map & surge pricing, push notifications (FCM), business API & webhooks for e-commerce stores, native wrapper (Capacitor).
+
+## Documentation & tests
+- Product & technical docs: [`docs/`](docs) — overview, requirements, architecture, database, API, roadmap, security, design system
+- Progress log: [`DEVELOPMENT_STATUS.md`](DEVELOPMENT_STATUS.md)
+- `npm test` — unit tests (Vitest) · `npm run test:db` — database suite on a local PostgreSQL (`DB_URL=postgresql://… npm run test:db`)
