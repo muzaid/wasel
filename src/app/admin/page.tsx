@@ -7,19 +7,21 @@ import ShipmentRow from "@/components/ShipmentRow";
 import { Spinner, vehicleEmoji } from "@/components/ui";
 import { useRequireRole } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
+import { useTm } from "@/lib/i18n-marketplace";
 import { supabase } from "@/lib/supabase";
 import { money } from "@/lib/geo";
 import { ACTIVE, Courier, Shipment } from "@/lib/types";
 
 interface Stats {
   shipments_total: number; shipments_today: number; active: number; delivered: number; cancelled: number; revenue_total: number; revenue_today: number;
-  gmv: number; couriers_online: number; couriers_pending: number; businesses: number; couriers: number; avg_accept_sec: number;
+  gmv: number; users?: number; b2c?: number; c2c?: number; b2b?: number; couriers_online: number; couriers_pending: number; businesses: number; couriers: number; avg_accept_sec: number;
   daily: { day: string; shipments: number; revenue: number }[];
 }
 
 export default function AdminHome() {
   const ok = useRequireRole("admin");
   const { t } = useI18n();
+  const { tm } = useTm();
   const [s, setS] = useState<Stats | null>(null);
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [active, setActive] = useState<Shipment[]>([]);
@@ -61,6 +63,12 @@ export default function AdminHome() {
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
         {cards.map(([k, v, c]) => (
           <div key={k} className="stat"><div className="stat-label">{t(k as TKey)}</div><div className={`stat-value text-xl ${c ?? ""}`}>{v}</div></div>
+        ))}
+      </div>
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="stat"><div className="stat-label">{tm("users")}</div><div className="stat-value text-xl">{s.users ?? "—"}</div></div>
+        {(["b2c", "c2c", "b2b"] as const).map((k) => (
+          <div key={k} className="stat"><div className="stat-label">{tm(`type_${k}_long`)}</div><div className="stat-value text-xl">{s[k] ?? 0}</div></div>
         ))}
       </div>
       {s.couriers_pending > 0 && <Link href="/admin/couriers" className="mb-6 block rounded-2xl bg-amber-50 p-4 text-sm font-semibold text-amber-800">⚠️ {s.couriers_pending} {t("couriers")} — {t("pending")} → {t("verification")}</Link>}

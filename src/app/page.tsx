@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Banknote, KeyRound, MapPin, Radar, ShieldCheck, Tag } from "lucide-react";
 import { useI18n, TKey } from "@/lib/i18n";
+import { useTm } from "@/lib/i18n-marketplace";
 import { useAuth, homeFor } from "@/lib/auth";
 import { LangSwitch, Logo } from "@/components/ui";
 
@@ -47,6 +48,7 @@ function RadarArt() {
 
 export default function Home() {
   const { t } = useI18n();
+  const { tm } = useTm();
   const { profile } = useAuth();
   const router = useRouter();
   useEffect(() => { if (profile) router.replace(homeFor(profile.role)); }, [profile, router]);
@@ -68,11 +70,25 @@ export default function Home() {
             <h1 className="text-4xl font-extrabold leading-tight md:text-5xl">{t("tagline")}</h1>
             <p className="mt-5 max-w-lg text-lg text-slate-300">{t("hero_sub")}</p>
             <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/signup?role=customer" className="btn bg-accent px-6 py-3.5 text-base text-ink-900 hover:brightness-95">📦 {tm("send_package")}</Link>
               <Link href="/signup?role=business" className="btn-primary px-6 py-3.5 text-base">{t("for_business")}</Link>
               <Link href="/signup?role=courier" className="btn bg-white px-6 py-3.5 text-base text-ink-900 hover:bg-slate-100">{t("for_courier")}</Link>
             </div>
           </div>
           <RadarArt />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pt-20">
+        <h2 className="mb-10 text-center text-3xl font-extrabold">{tm("three_ways")}</h2>
+        <div className="grid gap-5 md:grid-cols-3">
+          {([["b2c", "🏪 → 🏠"], ["c2c", "🙋 → 🙋"], ["b2b", "🏭 → 🏪"]] as const).map(([k, icon]) => (
+            <div key={k} className="card p-6">
+              <div className="mb-3 flex items-center justify-between"><span className="chip bg-ink-900 text-white">{tm(`type_${k}`)}</span><span dir="ltr" className="text-2xl">{icon}</span></div>
+              <div className="font-bold">{tm(`type_${k}_long`)}</div>
+              <p className="mt-1 text-sm text-slate-500">{tm(`${k}_desc`)}</p>
+            </div>
+          ))}
         </div>
       </section>
 
