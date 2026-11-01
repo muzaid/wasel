@@ -3,7 +3,7 @@
 --   • Unified identity: one account, many roles (customer / courier / business / admin)
 --   • Businesses are real entities with members (owner / manager / dispatcher)
 --   • Delivery relationships B2C, C2C, B2B — derived on the server, never trusted from the client
--- Run once in Supabase → SQL Editor after schema.sql and 002. Safe to re-run.
+-- Run once in Supabase → SQL Editor after schema.sql (002 optional, included). Safe to re-run.
 -- =====================================================================
 
 -- ---------- 1. Roles: profile.role becomes the "home" role; all roles live in wasel_user_roles ----------
@@ -86,6 +86,7 @@ create policy p_roles_adm on wasel_user_roles for all using (wasel_is_admin()) w
 -- ---------- 2. Businesses as entities + members ----------
 alter table wasel_businesses drop constraint if exists wasel_businesses_id_fkey;
 alter table wasel_businesses alter column id set default gen_random_uuid();
+alter table wasel_businesses add column if not exists logo_url text;          -- from 002, in case it was skipped
 alter table wasel_businesses add column if not exists owner_id uuid references wasel_profiles(id) on delete cascade;
 update wasel_businesses set owner_id = id where owner_id is null;   -- before 003 the business id was the owner's user id
 alter table wasel_businesses add column if not exists category text;
