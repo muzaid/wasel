@@ -1,4 +1,6 @@
-export type Role = "business" | "courier" | "admin";
+export type Role = "customer" | "business" | "courier" | "admin";
+export type MemberRole = "owner" | "manager" | "dispatcher";
+export type DeliveryType = "b2c" | "c2c" | "b2b";
 export type Vehicle = "bike" | "motorcycle" | "car" | "van";
 export type PackageSize = "small" | "medium" | "large" | "xlarge";
 export type ShipmentStatus =
@@ -11,7 +13,11 @@ export interface Courier {
   is_online: boolean; lat: number | null; lng: number | null; heading: number | null; last_seen_at: string | null;
   rating_avg: number; rating_count: number; total_deliveries: number;
 }
-export interface Business { id: string; business_name: string; logo_url: string | null; address: string | null; lat: number | null; lng: number | null }
+export interface Business {
+  id: string; owner_id: string | null; business_name: string; logo_url: string | null; address: string | null; lat: number | null; lng: number | null;
+  category: string | null; registration_number: string | null; email: string | null; phone: string | null; verification: "pending" | "approved" | "rejected";
+}
+export interface Membership { business_id: string; member_role: MemberRole; business: Business }
 export interface Settings {
   platform_fee: number; base_fare: number; per_km: number; min_fare: number;
   size_mult: Record<PackageSize, number>; vehicle_mult: Record<Vehicle, number>;
@@ -19,7 +25,8 @@ export interface Settings {
   max_radius_km: number; offer_timeout_sec: number; currency: string;
 }
 export interface Shipment {
-  id: string; code: string; business_id: string; courier_id: string | null; status: ShipmentStatus;
+  id: string; code: string; business_id: string | null; sender_id: string; recipient_business_id: string | null; delivery_type: DeliveryType;
+  courier_id: string | null; status: ShipmentStatus;
   pickup_address: string; pickup_lat: number; pickup_lng: number; pickup_contact: string | null; pickup_phone: string | null;
   dropoff_address: string; dropoff_lat: number; dropoff_lng: number; recipient_name: string; recipient_phone: string;
   package_size: PackageSize; package_desc: string | null; weight_kg: number | null; vehicle: Vehicle; is_fragile: boolean;
