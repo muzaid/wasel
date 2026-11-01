@@ -29,7 +29,7 @@ export const money = (n: number | string | null | undefined) => `₪${Number(n ?
 
 export async function searchAddress(q: string, lang: string) {
   const r = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=${lang}&countrycodes=ps,il&q=${encodeURIComponent(q)}`
+    `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=${lang}&countrycodes=il&q=${encodeURIComponent(q)}`
   );
   if (!r.ok) return [];
   const j = (await r.json()) as { display_name: string; lat: string; lon: string }[];
@@ -51,4 +51,4 @@ export const navLinks = (lat: number, lng: number) => ({
   waze: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
 });
 
-export const DEFAULT_CENTER = { lat: 31.9038, lng: 35.2034 }; // Ramallah
+export const DEFAULT_CENTER = { lat: 32.0853, lng: 34.7818 }; // Tel Aviv (maps re-centre on the user's GPS when allowed)

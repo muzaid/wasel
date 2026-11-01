@@ -39,6 +39,8 @@ export default function MapInner({ markers = [], line, circle, onPick, fitKey, f
   const layer = useRef<L.LayerGroup | null>(null);
   const live = useRef<Record<string, L.Marker>>({});
   const pickRef = useRef(onPick);
+  const hasMarkers = useRef(markers.length > 0);
+  hasMarkers.current = markers.length > 0;
   pickRef.current = onPick;
 
   useEffect(() => {
@@ -53,6 +55,13 @@ export default function MapInner({ markers = [], line, circle, onPick, fitKey, f
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
     setTimeout(() => m.invalidateSize(), 50);
+    // Empty map: start on the user's current location when the browser allows it
+    if (!hasMarkers.current && typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (p) => { if (map.current === m && !hasMarkers.current) m.setView([p.coords.latitude, p.coords.longitude], zoom); },
+        () => { /* denied or unavailable: stay on the default city */ },
+        { maximumAge: 300000, timeout: 8000 });
+    }
     return () => { m.remove(); map.current = null; live.current = {}; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

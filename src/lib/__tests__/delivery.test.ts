@@ -30,13 +30,13 @@ describe("pricing preview (mirrors wasel_quote_price)", () => {
 });
 
 describe("distance and ETA", () => {
-  const ramallah = { lat: 31.9038, lng: 35.2034 }, bireh = { lat: 31.91, lng: 35.22 };
+  const telAviv = { lat: 32.0853, lng: 34.7818 }, ramatGan = { lat: 32.0823, lng: 34.8106 };
   it("haversine is symmetric and plausible", () => {
-    expect(haversineKm(ramallah, bireh)).toBeCloseTo(haversineKm(bireh, ramallah), 10);
-    expect(haversineKm(ramallah, bireh)).toBeGreaterThan(1.5);
-    expect(haversineKm(ramallah, bireh)).toBeLessThan(2);
+    expect(haversineKm(telAviv, ramatGan)).toBeCloseTo(haversineKm(ramatGan, telAviv), 10);
+    expect(haversineKm(telAviv, ramatGan)).toBeGreaterThan(2.5);
+    expect(haversineKm(telAviv, ramatGan)).toBeLessThan(3);
   });
-  it("road distance uses the 1.3 factor", () => expect(roadKm(ramallah, bireh)).toBeCloseTo(haversineKm(ramallah, bireh) * 1.3, 1));
+  it("road distance uses the 1.3 factor", () => expect(roadKm(telAviv, ramatGan)).toBeCloseTo(haversineKm(telAviv, ramatGan) * 1.3, 1));
   it("ETA is at least one minute and slower by bike", () => {
     expect(etaMin(0)).toBe(1);
     expect(etaMin(10, "bike")).toBeGreaterThan(etaMin(10, "motorcycle"));
