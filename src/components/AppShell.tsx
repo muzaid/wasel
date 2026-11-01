@@ -2,19 +2,28 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LayoutDashboard, LogOut, PackagePlus, Settings, Users, Wallet, UserRound, Truck, Package, Bike } from "lucide-react";
+import { Bell, LayoutDashboard, LogOut, PackagePlus, Settings, Users, Wallet, UserRound, Truck, Package, Bike, Home } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 import type { Notification, Role } from "@/lib/types";
 import { Avatar, LangSwitch, Logo } from "./ui";
+import RoleSwitcher from "./RoleSwitcher";
+import { useTm, MKey } from "@/lib/i18n-marketplace";
 
-type NavItem = { href: string; label: TKey; icon: ReactNode };
+type NavItem = { href: string; label: TKey | `m:${MKey}`; icon: ReactNode };
 const NAV: Record<Role, NavItem[]> = {
+  customer: [
+    { href: "/customer", label: "dashboard", icon: <Home className="h-5 w-5" /> },
+    { href: "/customer/new", label: "m:send_package", icon: <PackagePlus className="h-5 w-5" /> },
+    { href: "/customer/history", label: "history", icon: <Package className="h-5 w-5" /> },
+    { href: "/customer/profile", label: "profile", icon: <UserRound className="h-5 w-5" /> },
+  ],
   business: [
     { href: "/business", label: "dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
     { href: "/business/new", label: "new_shipment", icon: <PackagePlus className="h-5 w-5" /> },
     { href: "/business/history", label: "history", icon: <Package className="h-5 w-5" /> },
+    { href: "/business/team", label: "m:team", icon: <Users className="h-5 w-5" /> },
     { href: "/business/profile", label: "profile", icon: <UserRound className="h-5 w-5" /> },
   ],
   courier: [
@@ -41,9 +50,17 @@ export function notifTitle(title: string, t: (k: TKey) => string) {
   return title;
 }
 
+/** Marketplace notification titles (business invites, B2B incoming updates). */
+function useNotifTitle() {
+  const { t } = useI18n();
+  const { tm } = useTm();
+  return (title: string) => (["business_invite", "incoming_picked_up", "incoming_delivered"].includes(title) ? tm(title as MKey) : notifTitle(title, t));
+}
+
 function Bell_() {
   const { session } = useAuth();
-  const { t, lang } = useI18n();
+  const { lang, t } = useI18n();
+  const title = useNotifTitle();
   const router = useRouter();
   const [items, setItems] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
@@ -90,7 +107,7 @@ function Bell_() {
             {items.map((n) => (
               <button key={n.id} onClick={() => { setOpen(false); if (n.link) router.push(n.link); }}
                 className="block w-full border-b border-slate-100 px-4 py-3 text-start hover:bg-slate-50">
-                <div className="text-sm font-semibold">{notifTitle(n.title, t)}</div>
+                <div className="text-sm font-semibold">{title(n.title)}</div>
                 {n.body && <div className="truncate text-xs text-slate-500">{n.body}</div>}
                 <div className="mt-0.5 text-[11px] text-slate-400">{new Date(n.created_at).toLocaleString(lang === "en" ? "en-GB" : lang)}</div>
               </button>
@@ -103,33 +120,36 @@ function Bell_() {
 }
 
 export default function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  const { profile, business, signOut } = useAuth();
+  const { profile, business, activeRole, signOut } = useAuth();
   const { t } = useI18n();
+  const { tm } = useTm();
+  const label = (l: NavItem["label"]) => (l.startsWith("m:") ? tm(l.slice(2) as MKey) : t(l as TKey));
   const path = usePathname();
   const router = useRouter();
-  const nav = profile ? NAV[profile.role] : [];
-  const isActive = (h: string) => (h === "/business" || h === "/courier" || h === "/admin" ? path === h : path.startsWith(h));
+  const nav = activeRole ? NAV[activeRole] : [];
+  const isActive = (h: string) => (["/business", "/courier", "/admin", "/customer"].includes(h) ? path === h : path.startsWith(h));
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 backdrop-blur">
         <div className={`mx-auto flex h-16 items-center gap-4 px-4 ${wide ? "max-w-7xl" : "max-w-5xl"}`}>
           <Link href="/"><Logo /></Link>
-          {profile && <span className="chip hidden bg-slate-100 text-slate-600 sm:inline-flex">{t(profile.role)}</span>}
+          {activeRole && <span className="chip hidden bg-slate-100 text-slate-600 lg:inline-flex">{tm(`role_${activeRole}` as MKey)}</span>}
           <nav className="ms-4 hidden gap-1 md:flex">
             {nav.map((n) => (
               <Link key={n.href} href={n.href}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive(n.href) ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-100"}`}>
-                {t(n.label)}
+                {label(n.label)}
               </Link>
             ))}
           </nav>
           <div className="ms-auto flex items-center gap-1">
+            <RoleSwitcher />
             <LangSwitch />
             {profile && <Bell_ />}
             {profile && (
-              <Link href={profile.role === "admin" ? "/admin" : `/${profile.role}/profile`} className="ms-1" title={profile.full_name}>
-                {profile.role === "business" && business?.logo_url
+              <Link href={activeRole === "admin" ? "/admin" : `/${activeRole}/profile`} className="ms-1" title={profile.full_name}>
+                {activeRole === "business" && business?.logo_url
                   ? <Avatar src={business.logo_url} name={business.business_name} size={34} square />
                   : <Avatar src={profile.avatar_url} name={profile.full_name} size={34} />}
               </Link>
@@ -148,7 +168,7 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
           style={{ gridTemplateColumns: `repeat(${Math.min(nav.length, 5)}, 1fr)` }}>
           {nav.slice(0, 5).map((n) => (
             <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold ${isActive(n.href) ? "text-brand-600" : "text-slate-500"}`}>
-              {n.icon}{t(n.label)}
+              {n.icon}{label(n.label)}
             </Link>
           ))}
         </nav>
