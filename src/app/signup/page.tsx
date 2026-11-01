@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, Bike } from "lucide-react";
+import { Building2, Bike, UserRound } from "lucide-react";
 import { supabase, explainError } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
+import { useTm } from "@/lib/i18n-marketplace";
 import { useAuth, homeFor } from "@/lib/auth";
 import type { Vehicle } from "@/lib/types";
 import { LangSwitch, Logo, vehicleEmoji } from "@/components/ui";
@@ -14,7 +15,9 @@ function SignupForm() {
   const { profile } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
-  const [role, setRole] = useState<"business" | "courier">(params.get("role") === "courier" ? "courier" : "business");
+  const { tm } = useTm();
+  const initial = params.get("role");
+  const [role, setRole] = useState<"customer" | "business" | "courier">(initial === "courier" || initial === "business" ? initial : "customer");
   const [f, setF] = useState({ email: "", password: "", full_name: "", phone: "", business_name: "", vehicle: "motorcycle" as Vehicle, plate_number: "", vehicle_model: "", vehicle_color: "" });
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
@@ -37,11 +40,13 @@ function SignupForm() {
         <div className="mb-6 flex items-center justify-between"><Link href="/"><Logo /></Link><LangSwitch /></div>
         <form onSubmit={submit} className="card space-y-4 p-6">
           <h1 className="text-xl font-extrabold">{t("signup")}</h1>
-          <div className="grid grid-cols-2 gap-2">
-            {([["business", <Building2 key="b" className="h-5 w-5" />], ["courier", <Bike key="c" className="h-5 w-5" />]] as const).map(([r, ic]) => (
+          <div className="grid grid-cols-3 gap-2">
+            {([["customer", <UserRound key="u" className="h-5 w-5" />, tm("role_customer"), tm("signup_customer_hint")],
+               ["business", <Building2 key="b" className="h-5 w-5" />, t("business"), tm("signup_business_hint")],
+               ["courier", <Bike key="c" className="h-5 w-5" />, t("courier"), tm("signup_courier_hint")]] as const).map(([r, ic, label, hint]) => (
               <button type="button" key={r} onClick={() => setRole(r)}
-                className={`flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-bold transition ${role === r ? "border-brand-600 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-500"}`}>
-                {ic}{t(r)}
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-center transition ${role === r ? "border-brand-600 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-500"}`}>
+                {ic}<span className="text-sm font-bold">{label}</span><span className="text-[10px] leading-tight opacity-80">{hint}</span>
               </button>
             ))}
           </div>

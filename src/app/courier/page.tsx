@@ -8,18 +8,20 @@ import Map, { MapMarker } from "@/components/Map";
 import { Avatar, Spinner, StatusBadge, vehicleEmoji } from "@/components/ui";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
+import { useTm } from "@/lib/i18n-marketplace";
 import { supabase, T } from "@/lib/supabase";
 import { beep, errKey, useSettings } from "@/lib/hooks";
 import { haversineKm, money } from "@/lib/geo";
 import { ACTIVE, Shipment } from "@/lib/types";
 import { useCourier } from "@/components/CourierProvider";
 
-type OfferRow = { id: number; distance_km: number; status: string; created_at: string; shipments: Shipment & { business?: { business_name: string; logo_url: string | null } | null } };
+type OfferRow = { id: number; distance_km: number; status: string; created_at: string; shipments: Shipment & { business?: { business_name: string; logo_url: string | null } | null; sender?: { full_name: string; avatar_url: string | null } | null } };
 
 export default function CourierHome() {
   const ok = useRequireRole("courier");
   const { session, courier } = useAuth();
   const { t } = useI18n();
+  const { tm } = useTm();
   const router = useRouter();
   const settings = useSettings();
   const { online, setOnline, pos, geoError } = useCourier();
@@ -34,7 +36,7 @@ export default function CourierHome() {
   const load = useCallback(async () => {
     if (!uid) return;
     const [{ data: o }, { data: a }, { data: l }] = await Promise.all([
-      supabase.from("shipment_offers").select(`id,distance_km,status,created_at,shipments:${T("shipments")}(*, business:${T("businesses")}(business_name, logo_url))`).eq("courier_id", uid).eq("status", "pending").order("created_at", { ascending: false }),
+      supabase.from("shipment_offers").select(`id,distance_km,status,created_at,shipments:${T("shipments")}(*, business:${T("businesses")}!business_id(business_name, logo_url), sender:${T("profiles")}!sender_id(full_name, avatar_url))`).eq("courier_id", uid).eq("status", "pending").order("created_at", { ascending: false }),
       supabase.from("shipments").select("*").eq("courier_id", uid).in("status", ACTIVE).maybeSingle(),
       supabase.from("ledger").select("amount").eq("courier_id", uid).eq("kind", "courier_earning").gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
     ]);
@@ -117,10 +119,14 @@ export default function CourierHome() {
               <div className="p-5">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <Avatar src={offer.shipments.business?.logo_url} name={offer.shipments.business?.business_name} size={32} square />
+                    {offer.shipments.business
+                      ? <Avatar src={offer.shipments.business.logo_url} name={offer.shipments.business.business_name} size={32} square />
+                      : <Avatar src={offer.shipments.sender?.avatar_url} name={offer.shipments.sender?.full_name} size={32} />}
                     <div className="min-w-0">
-                      <div className="text-sm font-bold text-brand-400">{t("new_offer")}</div>
-                      {offer.shipments.business?.business_name && <div className="truncate text-xs text-slate-300">{offer.shipments.business.business_name}</div>}
+                      <div className="text-sm font-bold text-brand-400">{t("new_offer")} <span className="chip ms-1 bg-white/10 px-1.5 py-0.5 text-[10px] text-white">{tm(`type_${offer.shipments.delivery_type ?? "b2c"}`)}</span></div>
+                      <div className="truncate text-xs text-slate-300">
+                        {offer.shipments.business?.business_name || offer.shipments.sender?.full_name} · {offer.shipments.business ? tm("sender_business") : tm("sender_individual")}
+                      </div>
                     </div>
                   </div>
                   <div className="text-xs text-slate-400">{offer.distance_km} {t("km")} {t("away")}</div>
