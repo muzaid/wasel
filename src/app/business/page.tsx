@@ -7,29 +7,37 @@ import ShipmentRow from "@/components/ShipmentRow";
 import { Avatar, Empty, Spinner } from "@/components/ui";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { useTm } from "@/lib/i18n-marketplace";
+import { isFinished } from "@/lib/delivery";
 import { supabase } from "@/lib/supabase";
 import { money } from "@/lib/geo";
 import type { Shipment } from "@/lib/types";
 
 export default function BusinessHome() {
   const ok = useRequireRole("business");
-  const { session, business } = useAuth();
+  const { business } = useAuth();
   const { t } = useI18n();
+  const { tm } = useTm();
   const [list, setList] = useState<Shipment[] | null>(null);
-  const uid = session?.user.id;
+  const [incoming, setIncoming] = useState<Shipment[]>([]);
+  const bid = business?.id;
 
   useEffect(() => {
-    if (!uid) return;
-    const load = () => supabase.from("shipments").select("*").eq("business_id", uid).order("created_at", { ascending: false }).limit(200)
+    if (!bid) return;
+    const load = () => supabase.from("shipments").select("*").eq("business_id", bid).order("created_at", { ascending: false }).limit(200)
       .then(({ data }) => setList((data as Shipment[]) ?? []));
-    load();
-    const ch = supabase.channel("biz-" + uid)
-      .on("postgres_changes", { event: "*", schema: "public", table: "shipments", filter: `business_id=eq.${uid}` }, load).subscribe();
+    const loadIncoming = () => supabase.from("shipments").select("*").eq("recipient_business_id", bid).order("created_at", { ascending: false }).limit(20)
+      .then(({ data }) => setIncoming((data as Shipment[]) ?? []));
+    load(); loadIncoming();
+    const ch = supabase.channel("biz-" + bid)
+      .on("postgres_changes", { event: "*", schema: "public", table: "shipments", filter: `business_id=eq.${bid}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "shipments", filter: `recipient_business_id=eq.${bid}` }, loadIncoming)
+      .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [uid]);
+  }, [bid]);
 
   if (!ok || !list) return <AppShell><Spinner /></AppShell>;
-  const active = list.filter((s) => !["delivered", "cancelled", "expired"].includes(s.status));
+  const active = list.filter((s) => !isFinished(s.status));
   const delivered = list.filter((s) => s.status === "delivered");
   const spent = delivered.reduce((a, s) => a + Number(s.price), 0);
   const cod = delivered.reduce((a, s) => a + Number(s.cod_amount), 0);
@@ -70,6 +78,14 @@ export default function BusinessHome() {
         )}
         {active.map((s) => <ShipmentRow key={s.id} s={s} href={`/business/shipments/${s.id}`} />)}
       </div>
+
+      {incoming.length > 0 && (
+        <>
+          <h2 className="mb-1 mt-8 font-bold">📥 {tm("incoming")}</h2>
+          <p className="mb-3 text-xs text-slate-500">{tm("incoming_hint")}</p>
+          <div className="space-y-3">{incoming.slice(0, 5).map((s) => <ShipmentRow key={s.id} s={s} href={`/track/${s.tracking_token}`} />)}</div>
+        </>
+      )}
 
       {list.length > active.length && (
         <>
