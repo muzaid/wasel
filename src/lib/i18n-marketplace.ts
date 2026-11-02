@@ -34,6 +34,7 @@ const en = {
   chk_gps: "Live GPS location", chk_gps_last: "Using your last known location (GPS not updating)", chk_gps_none: "No location yet — allow location access",
   chk_seen: "Connected, last update", chk_seen_never: "Not connected to the server yet", chk_nearby: "Deliveries waiting near you",
   chk_too_big: "Some nearby deliveries need a bigger vehicle than yours.", chk_own_note: "You never receive deliveries that you sent yourself.",
+  courier_accepted: "A courier accepted your delivery",
 };
 type Dict = typeof en;
 
@@ -65,6 +66,7 @@ const ar: Dict = {
   chk_gps: "الموقع المباشر يعمل", chk_gps_last: "نستخدم آخر موقع معروف (الـ GPS لا يتحدث)", chk_gps_none: "لا يوجد موقع — اسمح بالوصول للموقع",
   chk_seen: "متصل، آخر تحديث", chk_seen_never: "لم يتم الاتصال بالخادم بعد", chk_nearby: "طلبات بانتظارك بالقرب",
   chk_too_big: "بعض الطلبات القريبة تحتاج مركبة أكبر من مركبتك.", chk_own_note: "لن تصلك الطلبات التي أرسلتها أنت.",
+  courier_accepted: "مندوب قبل طلبك",
 };
 
 const he: Dict = {
@@ -95,6 +97,7 @@ const he: Dict = {
   chk_gps: "מיקום GPS חי", chk_gps_last: "משתמשים במיקום האחרון הידוע (ה-GPS לא מתעדכן)", chk_gps_none: "אין מיקום — אשר גישה למיקום",
   chk_seen: "מחובר, עדכון אחרון", chk_seen_never: "עדיין לא מחובר לשרת", chk_nearby: "משלוחים שממתינים לידך",
   chk_too_big: "חלק מהמשלוחים הקרובים דורשים רכב גדול יותר.", chk_own_note: "לא תקבל משלוחים ששלחת בעצמך.",
+  courier_accepted: "שליח קיבל את המשלוח שלך",
 };
 
 const dicts = { en, ar, he };

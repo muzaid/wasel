@@ -29,7 +29,8 @@ export default function CustomerHome() {
     load();
     const ch = supabase.channel("cust-" + uid)
       .on("postgres_changes", { event: "*", schema: "public", table: "shipments", filter: `sender_id=eq.${uid}` }, load).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const poll = setInterval(() => { if (!document.hidden) load(); }, 10000); // fallback if Realtime drops
+    return () => { supabase.removeChannel(ch); clearInterval(poll); };
   }, [uid]);
 
   if (!ok || !list) return <AppShell><Spinner /></AppShell>;

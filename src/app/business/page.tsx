@@ -33,7 +33,8 @@ export default function BusinessHome() {
       .on("postgres_changes", { event: "*", schema: "public", table: "shipments", filter: `business_id=eq.${bid}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "shipments", filter: `recipient_business_id=eq.${bid}` }, loadIncoming)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const poll = setInterval(() => { if (!document.hidden) { load(); loadIncoming(); } }, 10000); // fallback if Realtime drops
+    return () => { supabase.removeChannel(ch); clearInterval(poll); };
   }, [bid]);
 
   if (!ok || !list) return <AppShell><Spinner /></AppShell>;
