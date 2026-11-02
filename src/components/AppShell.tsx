@@ -69,13 +69,15 @@ function Bell_() {
 
   useEffect(() => {
     if (!uid) return;
-    supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(20)
+    const fetchAll = () => supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => setItems((data as Notification[]) ?? []));
+    fetchAll();
+    const poll = setInterval(() => { if (!document.hidden) fetchAll(); }, 15000); // fallback if Realtime drops
     const ch = supabase.channel("notif-" + uid)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
-        (p) => setItems((x) => [p.new as Notification, ...x].slice(0, 20)))
+        (p) => setItems((x) => [p.new as Notification, ...x.filter((i) => i.id !== (p.new as Notification).id)].slice(0, 20)))
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { supabase.removeChannel(ch); clearInterval(poll); };
   }, [uid]);
 
   useEffect(() => {
