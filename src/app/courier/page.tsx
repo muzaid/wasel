@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Banknote, MapPin, Navigation, Power } from "lucide-react";
@@ -49,20 +49,36 @@ export default function CourierHome() {
     if (!uid) return;
     load();
     const ch = supabase.channel("courier-" + uid)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "shipment_offers", filter: `courier_id=eq.${uid}` }, () => {
-        beep(); load();
-        if ("Notification" in window && Notification.permission === "granted" && document.hidden) new Notification(t("new_offer"));
-      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "shipment_offers", filter: `courier_id=eq.${uid}` }, load)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "shipment_offers", filter: `courier_id=eq.${uid}` }, load)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [uid, load, t]);
+    // Fallback when Realtime is slow or disconnected: check for new requests every 4 s and when the tab is shown again
+    const poll = setInterval(load, 4000);
+    const vis = () => { if (!document.hidden) load(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { supabase.removeChannel(ch); clearInterval(poll); document.removeEventListener("visibilitychange", vis); };
+  }, [uid, load]);
+
+  // The server's heartbeat just created offers for this courier: show them right away
+  useEffect(() => { if (status?.new_offers) load(); }, [status, load]);
 
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i); }, []);
 
   const timeout = (settings?.offer_timeout_sec ?? 30) * 1000;
   const live = offers.filter((o) => now - new Date(o.created_at).getTime() < timeout);
   const offer = live[0];
+
+  // Popup alert for every new request, whichever way it arrived (Realtime or polling)
+  const seen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const ids = live.map((o) => `${o.id}:${o.created_at}`); // re-sent offers keep their id but get a new time
+    if (seen.current === null) { seen.current = new Set(ids); if (!ids.length) return; }
+    const fresh = ids.filter((i) => !seen.current!.has(i));
+    ids.forEach((i) => seen.current!.add(i));
+    if (!fresh.length) return;
+    beep();
+    try { if ("Notification" in window && Notification.permission === "granted" && document.hidden) new Notification(t("new_offer")); } catch { /* unsupported */ }
+  }, [live, t]);
 
   const markers = useMemo<MapMarker[]>(() => [
     ...(pos ? [{ id: "me", kind: (online ? "courier" : "courier_idle") as MapMarker["kind"], ...pos, emoji: vehicleEmoji(courier?.vehicle) }] : []),
