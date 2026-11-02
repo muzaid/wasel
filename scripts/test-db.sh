@@ -7,7 +7,7 @@ ADMIN_URL="${DB_URL:-postgresql:///postgres}"
 psql "$ADMIN_URL" -q -c "drop database if exists wasel_test" -c "create database wasel_test" || exit 1
 TEST_URL="${ADMIN_URL%/*}/wasel_test"
 LOG=$(mktemp)
-for f in supabase/tests/00_supabase_stub.sql supabase/schema.sql supabase/migrations/*.sql supabase/tests/10_*.sql; do
+for f in supabase/tests/00_supabase_stub.sql supabase/schema.sql supabase/migrations/*.sql supabase/tests/[1-9]*.sql; do
   echo "→ $f"
   if ! psql "$TEST_URL" -q -v ON_ERROR_STOP=1 -f "$f" >"$LOG" 2>&1; then
     grep -vE "NOTICE:  .*(already exists|does not exist)" "$LOG"; echo "FAILED in $f"; exit 1

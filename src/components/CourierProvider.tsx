@@ -3,8 +3,13 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-interface CourierCtx { online: boolean; setOnline: (v: boolean) => Promise<void>; pos: { lat: number; lng: number } | null; geoError: string }
-const Ctx = createContext<CourierCtx>({ online: false, setOnline: async () => {}, pos: null, geoError: "" });
+/** What the server reports on each heartbeat (migration 004): explains why offers do or do not arrive. */
+export interface CourierStatus {
+  new_offers: number; online: boolean; verification: string; blocked: boolean; busy: boolean; has_location: boolean;
+  waiting_nearby: number; waiting_too_big: number; max_radius_km: number; at: number;
+}
+interface CourierCtx { online: boolean; setOnline: (v: boolean) => Promise<void>; pos: { lat: number; lng: number } | null; geoError: string; status: CourierStatus | null }
+const Ctx = createContext<CourierCtx>({ online: false, setOnline: async () => {}, pos: null, geoError: "", status: null });
 export const useCourier = () => useContext(Ctx);
 
 /** Keeps streaming GPS to the backend while the courier is online (or on an active job), across all courier pages. */
@@ -13,6 +18,7 @@ export default function CourierProvider({ children }: { children: React.ReactNod
   const [online, setOnlineState] = useState(false);
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [geoError, setGeoError] = useState("");
+  const [status, setStatus] = useState<CourierStatus | null>(null);
   const last = useRef<{ lat: number; lng: number; heading: number | null; sent: number } | null>(null);
 
   useEffect(() => { if (courier) setOnlineState(courier.is_online); }, [courier]);
@@ -31,9 +37,27 @@ export default function CourierProvider({ children }: { children: React.ReactNod
       (e) => setGeoError(e.message),
       { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }
     );
-    // heartbeat keeps last_seen fresh even when standing still
-    const hb = setInterval(() => { if (last.current) send(last.current.lat, last.current.lng, last.current.heading, true); }, 30000);
-    return () => { navigator.geolocation.clearWatch(id); clearInterval(hb); };
+    return () => navigator.geolocation.clearWatch(id);
+  }, [online, session, send]);
+
+  // Heartbeat every 20 s, with or without a GPS fix: keeps the courier "seen", widens waiting searches and
+  // picks up deliveries that were posted before the courier came online (wasel_courier_heartbeat, migration 004).
+  useEffect(() => {
+    if (!online || !session) { setStatus(null); return; }
+    let alive = true;
+    const beat = () => supabase.rpc("courier_heartbeat", { p_lat: last.current?.lat ?? null, p_lng: last.current?.lng ?? null })
+      .then(({ data, error }) => {
+        if (error) { // migration 004 not installed yet: fall back to the old location heartbeat
+          if (last.current) send(last.current.lat, last.current.lng, last.current.heading, true);
+          return;
+        }
+        if (alive && data) setStatus({ ...(data as Omit<CourierStatus, "at">), at: Date.now() });
+      });
+    beat();
+    const hb = setInterval(beat, 20000);
+    const vis = () => { if (document.visibilityState === "visible") beat(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { alive = false; clearInterval(hb); document.removeEventListener("visibilitychange", vis); };
   }, [online, session, send]);
 
   const setOnline = async (v: boolean) => {
@@ -44,5 +68,5 @@ export default function CourierProvider({ children }: { children: React.ReactNod
     await refresh();
   };
 
-  return <Ctx.Provider value={{ online, setOnline, pos, geoError }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ online, setOnline, pos, geoError, status }}>{children}</Ctx.Provider>;
 }
