@@ -24,7 +24,7 @@ export default function CourierHome() {
   const { tm } = useTm();
   const router = useRouter();
   const settings = useSettings();
-  const { online, setOnline, pos, geoError } = useCourier();
+  const { online, setOnline, pos, geoError, status } = useCourier();
   const [offers, setOffers] = useState<OfferRow[]>([]);
   const [active, setActive] = useState<Shipment | null>(null);
   const [today, setToday] = useState({ earn: 0, count: 0 });
@@ -150,6 +150,28 @@ export default function CourierHome() {
           </div>
         )}
       </div>
+
+      {online && !offer && !active && (
+        <div className="card mt-4 p-4">
+          <div className="mb-2 text-sm font-bold">{tm("why_no_jobs")}</div>
+          <ul className="space-y-1.5 text-sm">
+            {([
+              [verified, tm("chk_approved")],
+              [online, tm("chk_online")],
+              [!!pos || !!status?.has_location, pos ? tm("chk_gps") : status?.has_location ? tm("chk_gps_last") : `${tm("chk_gps_none")}${geoError ? ` (${geoError})` : ""}`],
+              [!!status, status ? `${tm("chk_seen")} ${Math.max(0, Math.round((now - status.at) / 1000))}s` : tm("chk_seen_never")],
+              [(status?.waiting_nearby ?? 0) > 0, `${tm("chk_nearby")}: ${status?.waiting_nearby ?? 0} (≤ ${Number(status?.max_radius_km ?? 20)} ${t("km")})`],
+            ] as [boolean, string][]).map(([okay, label]) => (
+              <li key={label} className="flex items-center gap-2">
+                <span className={`grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold text-white ${okay ? "bg-brand-500" : "bg-slate-300"}`}>{okay ? "✓" : "–"}</span>
+                <span className={okay ? "" : "text-slate-500"}>{label}</span>
+              </li>
+            ))}
+          </ul>
+          {(status?.waiting_too_big ?? 0) > 0 && <p className="mt-2 text-xs text-amber-700">{tm("chk_too_big")}</p>}
+          <p className="mt-2 text-xs text-slate-400">{tm("chk_own_note")}</p>
+        </div>
+      )}
 
       {active && (
         <Link href={`/courier/job/${active.id}`} className="card mt-4 flex items-center gap-4 border-brand-300 p-4">

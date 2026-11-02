@@ -30,6 +30,10 @@ const en = {
   b2b_desc: "Stock between shops, warehouses, suppliers and branches.",
   verification_status: "Verification", business_invite: "You were added to a business team",
   incoming_picked_up: "Incoming delivery picked up", incoming_delivered: "Incoming delivery arrived",
+  why_no_jobs: "Waiting for deliveries — checklist", chk_approved: "Account approved", chk_online: "You are online",
+  chk_gps: "Live GPS location", chk_gps_last: "Using your last known location (GPS not updating)", chk_gps_none: "No location yet — allow location access",
+  chk_seen: "Connected, last update", chk_seen_never: "Not connected to the server yet", chk_nearby: "Deliveries waiting near you",
+  chk_too_big: "Some nearby deliveries need a bigger vehicle than yours.", chk_own_note: "You never receive deliveries that you sent yourself.",
 };
 type Dict = typeof en;
 
@@ -57,6 +61,10 @@ const ar: Dict = {
   b2b_desc: "بضاعة بين المحلات والمستودعات والموردين والفروع.",
   verification_status: "التوثيق", business_invite: "تمت إضافتك لفريق مصلحة",
   incoming_picked_up: "تم استلام شحنة واردة", incoming_delivered: "وصلت شحنة واردة",
+  why_no_jobs: "بانتظار الطلبات — قائمة التحقق", chk_approved: "الحساب موثّق", chk_online: "أنت متصل",
+  chk_gps: "الموقع المباشر يعمل", chk_gps_last: "نستخدم آخر موقع معروف (الـ GPS لا يتحدث)", chk_gps_none: "لا يوجد موقع — اسمح بالوصول للموقع",
+  chk_seen: "متصل، آخر تحديث", chk_seen_never: "لم يتم الاتصال بالخادم بعد", chk_nearby: "طلبات بانتظارك بالقرب",
+  chk_too_big: "بعض الطلبات القريبة تحتاج مركبة أكبر من مركبتك.", chk_own_note: "لن تصلك الطلبات التي أرسلتها أنت.",
 };
 
 const he: Dict = {
@@ -83,6 +91,10 @@ const he: Dict = {
   b2b_desc: "סחורה בין חנויות, מחסנים, ספקים וסניפים.",
   verification_status: "אימות", business_invite: "צורפת לצוות של עסק",
   incoming_picked_up: "משלוח נכנס נאסף", incoming_delivered: "משלוח נכנס הגיע",
+  why_no_jobs: "ממתין למשלוחים — רשימת בדיקה", chk_approved: "החשבון מאושר", chk_online: "אתה מחובר",
+  chk_gps: "מיקום GPS חי", chk_gps_last: "משתמשים במיקום האחרון הידוע (ה-GPS לא מתעדכן)", chk_gps_none: "אין מיקום — אשר גישה למיקום",
+  chk_seen: "מחובר, עדכון אחרון", chk_seen_never: "עדיין לא מחובר לשרת", chk_nearby: "משלוחים שממתינים לידך",
+  chk_too_big: "חלק מהמשלוחים הקרובים דורשים רכב גדול יותר.", chk_own_note: "לא תקבל משלוחים ששלחת בעצמך.",
 };
 
 const dicts = { en, ar, he };
