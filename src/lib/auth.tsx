@@ -66,7 +66,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => load(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => load(s));
+    // Never await Supabase calls inside this callback: supabase-js holds its auth lock while it runs,
+    // so querying here would deadlock signInWithPassword (login button stuck on "loading").
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => { setTimeout(() => load(s), 0); });
     return () => sub.subscription.unsubscribe();
   }, [load]);
 
