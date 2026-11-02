@@ -25,5 +25,12 @@ To deploy this phase
 - `supabase/seed/seed_test_data.sql`: 15 test accounts (password `Wasel123!`) and 22 deliveries in Israeli cities; re-runnable
 - Maps default to Tel Aviv and centre on the user's GPS when allowed; address search limited to Israel
 
+## Courier dispatch reliability (migration 004)
+- Couriers send a heartbeat every 20 s with or without GPS, so they are not dropped as "stale"
+- A courier coming online picks up deliveries already waiting nearby; search radius widens on courier heartbeats (pg_cron optional)
+- Courier screen checklist: approved · online · location · connected · deliveries waiting nearby
+- Tests: 10 new DB checks (`supabase/tests/20_courier_dispatch.sql`) — DB suite **44/44 pass**
+- Known limit: no push to a closed app/phone yet (Phase 5: Web Push)
+
 ## Next: Phase 2 — Profiles & verification
 Phone OTP, password reset screen, business documents + admin approval, courier vehicles table (multiple vehicles, capacity, photos, approval), configurable verification rules.
