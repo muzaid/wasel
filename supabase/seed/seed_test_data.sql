@@ -222,6 +222,16 @@ begin
     (u_disp, 'business_invite', 'Café Dizengoff', '/business');
 end $$;
 
+-- Supabase Auth fails to log in users whose token columns are NULL ("Database error querying schema"): make them ''
+do $$ declare c text; begin
+  foreach c in array array['confirmation_token','recovery_token','email_change_token_new','email_change_token_current',
+                           'email_change','phone_change','phone_change_token','reauthentication_token'] loop
+    if exists(select 1 from information_schema.columns where table_schema = 'auth' and table_name = 'users' and column_name = c) then
+      execute format('update auth.users set %I = '''' where %I is null and email like ''%%@wasel.test''', c, c);
+    end if;
+  end loop;
+end $$;
+
 -- your own account becomes admin too, if you already signed up with it
 do $$ begin
   if exists(select 1 from auth.users where lower(email) = 'muhammad.zaid86@gmail.com') then
