@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, KeyRound, Radar, XCircle } from "lucide-react";
 import Map, { MapMarker } from "@/components/Map";
@@ -8,7 +8,7 @@ import { useI18n, TKey } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
 import { canCancel as cancellable } from "@/lib/delivery";
 import { supabase } from "@/lib/supabase";
-import { errKey, useLiveShipment, useSettings } from "@/lib/hooks";
+import { beep, errKey, useLiveShipment, useSettings } from "@/lib/hooks";
 import { etaMin, haversineKm, money } from "@/lib/geo";
 import type { Courier, Profile } from "@/lib/types";
 
@@ -27,6 +27,22 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i); }, []);
+
+  // Courier accepted: sound, vibration, browser notification and a banner on screen
+  const prevStatus = useRef<string | null>(null);
+  const [acceptedAt, setAcceptedAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (!s) return;
+    if (prevStatus.current === "searching" && s.status === "accepted") {
+      beep(); setAcceptedAt(Date.now());
+      try { if ("Notification" in window && Notification.permission === "granted") new Notification(tm("courier_accepted"), { body: `#${s.code}` }); } catch { /* unsupported */ }
+    }
+    prevStatus.current = s.status;
+  }, [s, tm]);
+  // ask once while searching, so the acceptance can also notify a background tab
+  useEffect(() => {
+    if (s?.status === "searching" && "Notification" in window && Notification.permission === "default") Notification.requestPermission();
+  }, [s?.status]);
 
   // load courier details when assigned
   useEffect(() => {
@@ -80,6 +96,12 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
         <div className="ms-auto text-2xl font-extrabold tabular-nums">{money(s.price)}</div>
       </div>
       <div className="mb-5"><Progress status={s.status} /></div>
+      {acceptedAt && now - acceptedAt < 15000 && s.status === "accepted" && (
+        <div className="mb-4 flex animate-slideup items-center gap-3 rounded-2xl bg-brand-600 p-4 font-bold text-white shadow-lg">
+          <span className="text-2xl">✅</span>
+          <span className="flex-1">{tm("courier_accepted")}{courier ? ` — ${courier.name}` : ""}</span>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
         <div className="space-y-4">

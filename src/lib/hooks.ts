@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "./supabase";
 import type { Settings, Shipment, ShipmentEvent } from "./types";
 
@@ -17,6 +17,8 @@ export function useLiveShipment(id: string) {
   const [trail, setTrail] = useState<[number, number][]>([]);
   const [offers, setOffers] = useState(0);
   const [loading, setLoading] = useState(true);
+  const finishedRef = useRef(false);
+  finishedRef.current = !!shipment && ["delivered", "cancelled", "expired"].includes(shipment.status);
 
   const load = useCallback(async () => {
     const [{ data: sh }, { data: ev }, { count }] = await Promise.all([
@@ -40,7 +42,12 @@ export function useLiveShipment(id: string) {
         setCourierPos({ lat: l.lat, lng: l.lng }); setTrail((t) => [...t, [l.lat, l.lng]]);
       })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    // Fallback when Realtime is slow or disconnected (mobile networks, sleeping tabs): re-read every 5 s
+    // until the delivery is finished, and immediately when the tab becomes visible again.
+    const poll = setInterval(() => { if (!document.hidden && !finishedRef.current) load(); }, 5000);
+    const vis = () => { if (!document.hidden) load(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { supabase.removeChannel(ch); clearInterval(poll); document.removeEventListener("visibilitychange", vis); };
   }, [id, load]);
 
   return { shipment, events, courierPos, trail, offers, loading, reload: load };
