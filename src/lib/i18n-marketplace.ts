@@ -35,6 +35,17 @@ const en = {
   chk_seen: "Connected, last update", chk_seen_never: "Not connected to the server yet", chk_nearby: "Deliveries waiting near you",
   chk_too_big: "Some nearby deliveries need a bigger vehicle than yours.", chk_own_note: "You never receive deliveries that you sent yourself.",
   courier_accepted: "A courier accepted your delivery",
+  choose_courier: "Choose your courier", choose_courier_hint: "Nearest available couriers — pick one, or send to all and the first to accept takes it.",
+  send_to_all: "Send to all nearby couriers", send_to_all_hint: "Fastest — the first courier to accept takes it",
+  request_courier: "Request", min_away: "min away", reviews: "reviews", deliveries_n: "deliveries",
+  no_couriers_near: "No couriers online near the pickup right now. You can still send — we keep searching.",
+  enter_pickup_first: "Set the pickup point to see the couriers near it",
+  couriers_near_you: "Couriers near you", nearest_courier: "Nearest courier", home_map_title: "Couriers around you right now",
+  waiting_courier: "Waiting for your courier to accept", courier_no_answer: "The courier did not accept", courier_declined: "The courier declined your request",
+  choose_another: "Choose another courier", login_to_send: "Log in or create an account to send — your delivery details are saved.",
+  draft_restored: "Your delivery details were restored — review and send.",
+  by_email: "Email", by_phone: "Phone (SMS)", send_code: "Send code", sms_code: "Code from SMS", verify: "Verify", code_sent: "We sent a code to",
+  sms_not_enabled: "SMS login is not enabled yet — please use email for now.", resend: "Send again", phone_hint: "e.g. 052-1234567",
 };
 type Dict = typeof en;
 
@@ -67,6 +78,17 @@ const ar: Dict = {
   chk_seen: "متصل، آخر تحديث", chk_seen_never: "لم يتم الاتصال بالخادم بعد", chk_nearby: "طلبات بانتظارك بالقرب",
   chk_too_big: "بعض الطلبات القريبة تحتاج مركبة أكبر من مركبتك.", chk_own_note: "لن تصلك الطلبات التي أرسلتها أنت.",
   courier_accepted: "مندوب قبل طلبك",
+  choose_courier: "اختر المندوب", choose_courier_hint: "أقرب المندوبين المتاحين — اختر واحداً، أو أرسل للجميع وأول من يقبل يأخذ الطلب.",
+  send_to_all: "أرسل لكل المندوبين القريبين", send_to_all_hint: "الأسرع — أول مندوب يقبل يأخذ الطلب",
+  request_courier: "اطلب", min_away: "دقيقة", reviews: "تقييم", deliveries_n: "توصيلة",
+  no_couriers_near: "لا يوجد مندوبون متصلون قرب نقطة الاستلام حالياً. يمكنك الإرسال وسنستمر بالبحث.",
+  enter_pickup_first: "حدد نقطة الاستلام لترى المندوبين القريبين منها",
+  couriers_near_you: "مندوبون بالقرب منك", nearest_courier: "أقرب مندوب", home_map_title: "المندوبون حولك الآن",
+  waiting_courier: "بانتظار موافقة المندوب", courier_no_answer: "المندوب لم يقبل الطلب", courier_declined: "المندوب رفض طلبك",
+  choose_another: "اختر مندوباً آخر", login_to_send: "سجّل الدخول أو أنشئ حساباً للإرسال — تفاصيل طلبك محفوظة.",
+  draft_restored: "استرجعنا تفاصيل طلبك — راجعها وأرسل.",
+  by_email: "البريد الإلكتروني", by_phone: "الهاتف (SMS)", send_code: "أرسل الرمز", sms_code: "الرمز من الرسالة", verify: "تأكيد", code_sent: "أرسلنا رمزاً إلى",
+  sms_not_enabled: "الدخول عبر SMS غير مفعّل بعد — استخدم البريد الإلكتروني حالياً.", resend: "أرسل مرة أخرى", phone_hint: "مثال: 052-1234567",
 };
 
 const he: Dict = {
@@ -98,6 +120,17 @@ const he: Dict = {
   chk_seen: "מחובר, עדכון אחרון", chk_seen_never: "עדיין לא מחובר לשרת", chk_nearby: "משלוחים שממתינים לידך",
   chk_too_big: "חלק מהמשלוחים הקרובים דורשים רכב גדול יותר.", chk_own_note: "לא תקבל משלוחים ששלחת בעצמך.",
   courier_accepted: "שליח קיבל את המשלוח שלך",
+  choose_courier: "בחר שליח", choose_courier_hint: "השליחים הזמינים הקרובים — בחר אחד, או שלח לכולם והראשון שמאשר לוקח.",
+  send_to_all: "שלח לכל השליחים הקרובים", send_to_all_hint: "הכי מהיר — השליח הראשון שמאשר לוקח",
+  request_courier: "הזמן", min_away: "דק׳", reviews: "דירוגים", deliveries_n: "משלוחים",
+  no_couriers_near: "אין כרגע שליחים מחוברים ליד נקודת האיסוף. אפשר לשלוח — נמשיך לחפש.",
+  enter_pickup_first: "קבע נקודת איסוף כדי לראות שליחים קרובים",
+  couriers_near_you: "שליחים לידך", nearest_courier: "השליח הקרוב", home_map_title: "שליחים סביבך עכשיו",
+  waiting_courier: "ממתין לאישור השליח", courier_no_answer: "השליח לא אישר", courier_declined: "השליח דחה את הבקשה",
+  choose_another: "בחר שליח אחר", login_to_send: "התחבר או צור חשבון כדי לשלוח — פרטי המשלוח נשמרו.",
+  draft_restored: "פרטי המשלוח שוחזרו — בדוק ושלח.",
+  by_email: "אימייל", by_phone: "טלפון (SMS)", send_code: "שלח קוד", sms_code: "קוד מה-SMS", verify: "אמת", code_sent: "שלחנו קוד אל",
+  sms_not_enabled: "התחברות ב-SMS עדיין לא מופעלת — השתמש באימייל בינתיים.", resend: "שלח שוב", phone_hint: "לדוגמה 052-1234567",
 };
 
 const dicts = { en, ar, he };
