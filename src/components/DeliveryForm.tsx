@@ -5,6 +5,8 @@ import { Bookmark, Building2, Loader2, Radar, Search, UserRound } from "lucide-r
 import Map from "@/components/Map";
 import AddressField, { Place } from "@/components/AddressField";
 import { Avatar, vehicleEmoji } from "@/components/ui";
+import CourierPicker from "@/components/CourierPicker";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { useAuth } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
@@ -12,7 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { useSettings } from "@/lib/hooks";
 import { deliveryType } from "@/lib/delivery";
 import { etaMin, money, quote, reverseGeocode, roadKm } from "@/lib/geo";
-import type { PackageSize, Vehicle } from "@/lib/types";
+import type { NearbyCourier, PackageSize, Vehicle } from "@/lib/types";
 
 const SIZES: PackageSize[] = ["small", "medium", "large", "xlarge"];
 const SIZE_ICON: Record<PackageSize, string> = { small: "✉️", medium: "📦", large: "🗃️", xlarge: "🛋️" };
@@ -26,8 +28,11 @@ interface Biz { id: string; business_name: string; logo_url: string | null; addr
  * One delivery form for every relationship:
  *  - mode "business": B2C (to a person) or B2B (to another business on Wasel)
  *  - mode "customer": C2C (person to person)
+ * The sender sees the nearest couriers (rating, vehicle, ETA, price) and picks one or sends to all.
+ * Visitors who are not logged in can fill everything in; the draft is kept while they sign up.
  * The server derives the final delivery type and price; the values shown here are a preview.
  */
+interface Draft { pickup: Place | null; dropoff: Place | null; f: Record<string, unknown>; choice: string | null }
 export default function DeliveryForm({ mode }: { mode: "business" | "customer" }) {
   const { session, profile, business } = useAuth();
   const { t, lang } = useI18n();
@@ -48,6 +53,28 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [choice, setChoice] = useState<string | null>(null);          // chosen courier id, null = send to all
+  const [chosen, setChosen] = useState<NearbyCourier | null>(null);
+  const [nearby, setNearby] = useState<NearbyCourier[]>([]);
+  const [restored, setRestored] = useState(false);
+
+  // details filled in before logging in come back here after sign-up
+  useEffect(() => {
+    if (mode !== "customer" || !session) return;
+    const d = loadDraft<Draft>();
+    if (!d) return;
+    if (d.pickup) setPickup(d.pickup);
+    if (d.dropoff) setDropoff(d.dropoff);
+    setF((x) => ({ ...x, ...(d.f as Partial<typeof x>) }));
+    setChoice(d.choice ?? null);
+    setRestored(true);
+    clearDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
+  // a restored draft remembers the courier id: link it to the live list once it loads
+  useEffect(() => {
+    if (choice && !chosen) { const c = nearby.find((x) => x.id === choice); if (c) setChosen(c); }
+  }, [nearby, choice, chosen]);
   const owner = mode === "business" ? { col: "business_id", id: business?.id } : { col: "user_id", id: session?.user.id };
 
   useEffect(() => {
@@ -79,13 +106,16 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
   };
 
   const km = pickup && dropoff ? roadKm(pickup, dropoff) : 0;
-  const q = settings && km ? quote(settings, km, f.package_size, f.vehicle, f.is_fragile, Number(f.cod_amount) || 0) : null;
+  const priceVehicle = chosen && choice === chosen.id ? chosen.vehicle : f.vehicle;   // price follows the chosen courier's vehicle
+  const q = settings && km ? quote(settings, km, f.package_size, priceVehicle, f.is_fragile, Number(f.cod_amount) || 0) : null;
   const type = deliveryType(mode === "business" ? business?.id : null, toBusiness ? recipientBiz?.id : null);
 
   const markers = useMemo(() => [
     ...(pickup ? [{ id: "p", kind: "pickup" as const, ...pickup }] : []),
     ...(dropoff ? [{ id: "d", kind: "dropoff" as const, ...dropoff }] : []),
-  ], [pickup, dropoff]);
+    ...nearby.map((c) => ({ id: "c-" + c.id, kind: (choice === c.id ? "courier" : "courier_idle") as "courier" | "courier_idle",
+      lat: c.lat, lng: c.lng, emoji: vehicleEmoji(c.vehicle), popup: c.full_name })),
+  ], [pickup, dropoff, nearby, choice]);
 
   const onPick = async (lat: number, lng: number) => {
     if (mapMode === "dropoff" && recipientBiz) return; // B2B destination is the business location
@@ -110,7 +140,12 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pickup || !dropoff || !session) return;
+    if (!pickup || !dropoff) return;
+    if (!session) {   // visitor: keep the details and ask them to sign up / log in
+      saveDraft({ pickup, dropoff, f, choice } satisfies Draft);
+      router.push("/signup?next=" + encodeURIComponent("/customer/new"));
+      return;
+    }
     if (mode === "business" && !business) return;
     if (toBusiness && !recipientBiz) { setErr(tm("search_business")); return; }
     setBusy(true); setErr("");
@@ -123,9 +158,15 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
       recipient_name: f.recipient_name, recipient_phone: f.recipient_phone, package_size: f.package_size, package_desc: f.package_desc || null,
       weight_kg: f.weight_kg ? Number(f.weight_kg) : null, vehicle: f.vehicle, is_fragile: f.is_fragile, cod_amount: Number(f.cod_amount) || 0,
       notes: f.notes || null, scheduled_at: f.scheduled_at ? new Date(f.scheduled_at).toISOString() : null,
+      dispatch_mode: choice ? "direct" : "broadcast",
     }).select("id").single();
     if (error || !data) { setErr(error?.message || t("error")); setBusy(false); return; }
-    await supabase.rpc("dispatch_shipment", { p_id: data.id });
+    if (choice) {
+      const { error: rq } = await supabase.rpc("request_courier", { p_id: data.id, p_courier: choice });
+      if (rq) await supabase.rpc("broadcast_shipment", { p_id: data.id });   // courier just went offline/busy: ask everyone
+    } else {
+      await supabase.rpc("dispatch_shipment", { p_id: data.id });
+    }
     router.replace(`/${mode}/shipments/${data.id}`);
   };
 
@@ -133,6 +174,7 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
 
   return (
     <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[1fr_440px]">
+      {restored && <div className="rounded-xl bg-brand-50 p-3 text-sm font-semibold text-brand-800 lg:col-span-2">✓ {tm("draft_restored")}</div>}
       <div className="space-y-5 lg:order-2">
         <div className="lg:sticky lg:top-20">
           <Map markers={markers} line={pickup && dropoff ? [[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]] : undefined}
@@ -272,9 +314,14 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
           </div>
         </section>
 
+        <CourierPicker pickup={pickup} vehicle={f.vehicle} km={km} size={f.package_size} fragile={f.is_fragile} cod={Number(f.cod_amount) || 0}
+          settings={settings} selected={choice} onSelect={(id, c) => { setChoice(id); setChosen(c ?? null); }} onCouriers={setNearby} />
+
         {err && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{err}</div>}
+        {!session && <div className="rounded-xl bg-sky-50 p-3 text-sm text-sky-800">{tm("login_to_send")}</div>}
         <button className="btn-primary w-full py-4 text-base" disabled={busy || !pickup || !dropoff || (mode === "business" && !business)}>
-          {busy ? <><Loader2 className="h-5 w-5 animate-spin" />{t("posting")}</> : <><Radar className="h-5 w-5" />{t("post_shipment")} {q ? `· ${money(q.price)}` : ""}</>}
+          {busy ? <><Loader2 className="h-5 w-5 animate-spin" />{t("posting")}</>
+            : <><Radar className="h-5 w-5" />{choice && chosen ? `${tm("request_courier")} ${chosen.full_name}` : tm("send_to_all")} {q ? `· ${money(q.price)}` : ""}</>}
         </button>
       </div>
     </form>
