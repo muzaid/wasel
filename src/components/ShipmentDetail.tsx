@@ -3,21 +3,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, KeyRound, Radar, XCircle } from "lucide-react";
 import Map, { MapMarker } from "@/components/Map";
-import { CourierCard, CourierInfo, Progress, ShareTracking, Spinner, StatusBadge, Stars, Timeline, vehicleEmoji } from "@/components/ui";
+import { Avatar, CourierCard, CourierInfo, Progress, ShareTracking, Spinner, StatusBadge, Stars, Timeline, vehicleEmoji } from "@/components/ui";
+import CourierPicker from "@/components/CourierPicker";
 import { useI18n, TKey } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
 import { canCancel as cancellable } from "@/lib/delivery";
 import { supabase } from "@/lib/supabase";
 import { beep, errKey, useLiveShipment, useSettings } from "@/lib/hooks";
 import { etaMin, haversineKm, money } from "@/lib/geo";
-import type { Courier, Profile } from "@/lib/types";
+import type { Courier, Profile, Vehicle } from "@/lib/types";
+
+interface Direct { courier_id: string; name: string; avatar_url: string | null; vehicle: Vehicle; vehicle_model: string | null; rating: number; deliveries: number; offer_status: string | null; offer_at: string | null }
 
 /** Live view of one delivery for its sender (business member or individual customer). */
 export default function ShipmentDetail({ id, backHref }: { id: string; backHref: string }) {
   const { t } = useI18n();
   const { tm } = useTm();
   const settings = useSettings();
-  const { shipment: s, events, courierPos, trail, offers } = useLiveShipment(id);
+  const { shipment: s, events, courierPos, trail, offers, reload } = useLiveShipment(id);
+  const [direct, setDirect] = useState<Direct | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [pickBusy, setPickBusy] = useState(false);
   const [courier, setCourier] = useState<(CourierInfo & { lat: number | null; lng: number | null }) | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -43,6 +49,12 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
   useEffect(() => {
     if (s?.status === "searching" && "Notification" in window && Notification.permission === "default") Notification.requestPermission();
   }, [s?.status]);
+
+  // direct request: who was asked and did they answer?
+  useEffect(() => {
+    if (!s || s.status !== "searching" || s.dispatch_mode !== "direct") { setDirect(null); return; }
+    supabase.rpc("direct_request", { p_id: s.id }).then(({ data }) => setDirect((data as Direct) ?? null));
+  }, [s]);
 
   // load courier details when assigned
   useEffect(() => {
@@ -84,6 +96,17 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
     await supabase.rpc("rate_shipment", { p_id: s.id, p_stars: stars, p_comment: comment || null }); setRated(true);
   };
   const canCancel = cancellable(s.status);
+  const timeoutMs = (settings?.offer_timeout_sec ?? 30) * 1000;
+  const directWaiting = !!direct && direct.offer_status === "pending" && !!direct.offer_at && now - new Date(direct.offer_at).getTime() < timeoutMs;
+  const directLeft = direct?.offer_at ? Math.max(0, Math.ceil((timeoutMs - (now - new Date(direct.offer_at).getTime())) / 1000)) : 0;
+  const directFailed = s.status === "searching" && s.dispatch_mode === "direct" && !directWaiting;
+  const requestCourier = async (cid: string) => {
+    setPickBusy(true);
+    const { error } = await supabase.rpc("request_courier", { p_id: s.id, p_courier: cid });
+    setPickBusy(false);
+    if (error) alert(t(errKey(error.message) as TKey)); else { setPicking(false); reload(); }
+  };
+  const sendToAll = async () => { setPickBusy(true); await supabase.rpc("broadcast_shipment", { p_id: s.id }); setPickBusy(false); setPicking(false); reload(); };
   const searchSec = Math.floor((now - new Date(s.created_at).getTime()) / 1000);
 
   return (
@@ -109,7 +132,25 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
             <Map markers={markers} line={trail.length > 1 ? trail : undefined} fitKey={`${s.id}-${s.status}`}
               circle={s.status === "searching" ? { lat: s.pickup_lat, lng: s.pickup_lng, km: Number(s.dispatch_radius_km) } : null}
               className="h-[360px] w-full rounded-2xl lg:h-[520px]" />
-            {s.status === "searching" && (
+            {s.status === "searching" && s.dispatch_mode === "direct" && (
+              <div className="absolute inset-x-3 bottom-3 z-[500] rounded-2xl bg-ink-900/95 p-4 text-white shadow-xl">
+                <div className="flex items-center gap-3">
+                  {direct && <Avatar src={direct.avatar_url} name={direct.name} size={44} />}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold">{directWaiting ? tm("waiting_courier") : direct?.offer_status === "declined" ? tm("courier_declined") : tm("courier_no_answer")}</div>
+                    {direct && <div className="truncate text-xs text-slate-300">{direct.name} · {vehicleEmoji(direct.vehicle)} {direct.vehicle_model ?? ""} · ★ {Number(direct.rating).toFixed(1)}</div>}
+                  </div>
+                  {directWaiting && <div className="font-mono text-lg tabular-nums">{directLeft}s</div>}
+                </div>
+                {directFailed && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" disabled={pickBusy} onClick={() => setPicking(true)} className="btn bg-white/10 py-2.5 text-white">{tm("choose_another")}</button>
+                    <button type="button" disabled={pickBusy} onClick={sendToAll} className="btn-primary py-2.5">{tm("send_to_all")}</button>
+                  </div>
+                )}
+              </div>
+            )}
+            {s.status === "searching" && s.dispatch_mode !== "direct" && (
               <div className="absolute inset-x-3 bottom-3 z-[500] flex items-center gap-4 rounded-2xl bg-ink-900/95 p-4 text-white shadow-xl">
                 <div className="relative grid h-12 w-12 place-items-center">
                   <span className="absolute inset-0 animate-ping2 rounded-full border-2 border-brand-400" />
@@ -123,6 +164,12 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
               </div>
             )}
           </div>
+
+          {picking && s.status === "searching" && (
+            <CourierPicker pickup={{ lat: s.pickup_lat, lng: s.pickup_lng }} vehicle={(s.required_vehicle ?? s.vehicle) as Vehicle} km={Number(s.distance_km)}
+              size={s.package_size} fragile={s.is_fragile} cod={Number(s.cod_amount)} settings={settings} selected={null}
+              onSelect={(cid) => (cid ? requestCourier(cid) : sendToAll())} />
+          )}
 
           <div className="card grid gap-4 p-5 sm:grid-cols-2">
             <div><div className="text-xs font-bold text-brand-700">A · {t("pickup")}</div><div className="text-sm">{s.pickup_address}</div><div className="text-xs text-slate-400">{s.pickup_contact} {s.pickup_phone}</div></div>
