@@ -26,6 +26,7 @@ export interface Settings {
 }
 export interface Shipment {
   id: string; code: string; business_id: string | null; sender_id: string; recipient_business_id: string | null; delivery_type: DeliveryType;
+  dispatch_mode?: "broadcast" | "direct"; requested_courier_id?: string | null; required_vehicle?: Vehicle | null;
   courier_id: string | null; status: ShipmentStatus;
   pickup_address: string; pickup_lat: number; pickup_lng: number; pickup_contact: string | null; pickup_phone: string | null;
   dropoff_address: string; dropoff_lat: number; dropoff_lng: number; recipient_name: string; recipient_phone: string;
@@ -40,3 +41,9 @@ export interface ShipmentEvent { id: number; shipment_id: string; status: Shipme
 export interface Notification { id: number; user_id: string; title: string; body: string | null; link: string | null; is_read: boolean; created_at: string }
 
 export const ACTIVE: ShipmentStatus[] = ["accepted", "arrived_pickup", "picked_up", "in_transit"];
+
+/** One row of wasel_nearby_couriers (public card data; location rounded to ~100 m). */
+export interface NearbyCourier {
+  id: string; full_name: string; avatar_url: string | null; vehicle: Vehicle; vehicle_model: string | null; vehicle_color: string | null;
+  rating: number; rating_count: number; deliveries: number; distance_km: number; lat: number; lng: number;
+}
