@@ -7,6 +7,7 @@ import { supabase, explainError } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
 import { useAuth, homeFor } from "@/lib/auth";
+import PhoneOtp, { MethodTabs } from "@/components/PhoneOtp";
 import type { Vehicle } from "@/lib/types";
 import { LangSwitch, Logo, vehicleEmoji } from "@/components/ui";
 
@@ -17,16 +18,20 @@ function SignupForm() {
   const params = useSearchParams();
   const { tm } = useTm();
   const initial = params.get("role");
+  const next = params.get("next");
+  const [method, setMethod] = useState<"email" | "phone">("email");
   const [role, setRole] = useState<"customer" | "business" | "courier">(initial === "courier" || initial === "business" ? initial : "customer");
   const [f, setF] = useState({ email: "", password: "", full_name: "", phone: "", business_name: "", vehicle: "motorcycle" as Vehicle, plate_number: "", vehicle_model: "", vehicle_color: "" });
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (profile) router.replace(homeFor(profile.role)); }, [profile, router]);
+  useEffect(() => { if (profile) router.replace(next && next.startsWith("/") ? next : homeFor(profile.role)); }, [profile, router, next]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setBusy(true); setErr("");
+    e.preventDefault();
+    if (method === "phone") return;   // phone sign-up goes through the SMS code buttons
+    setBusy(true); setErr("");
     const { email, password, ...meta } = f;
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { ...meta, role, app: "wasel" } } });
     if (error) setErr(explainError(error.message));
@@ -53,9 +58,12 @@ function SignupForm() {
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2"><label className="label">{t("full_name")}</label><input className="input" required value={f.full_name} onChange={set("full_name")} /></div>
             {role === "business" && <div className="col-span-2"><label className="label">{t("business_name")}</label><input className="input" required value={f.business_name} onChange={set("business_name")} /></div>}
-            <div className="col-span-2"><label className="label">{t("phone")}</label><input dir="ltr" className="input" type="tel" required placeholder="059xxxxxxx" value={f.phone} onChange={set("phone")} /></div>
-            <div className="col-span-2"><label className="label">{t("email")}</label><input dir="ltr" className="input" type="email" required value={f.email} onChange={set("email")} /></div>
-            <div className="col-span-2"><label className="label">{t("password")}</label><input dir="ltr" className="input" type="password" minLength={6} required value={f.password} onChange={set("password")} /></div>
+            <div className="col-span-2"><MethodTabs method={method} setMethod={(m) => { setMethod(m); setErr(""); }} /></div>
+            {method === "email" && <>
+              <div className="col-span-2"><label className="label">{t("phone")}</label><input dir="ltr" className="input" type="tel" required placeholder="05x-xxxxxxx" value={f.phone} onChange={set("phone")} /></div>
+              <div className="col-span-2"><label className="label">{t("email")}</label><input dir="ltr" className="input" type="email" required value={f.email} onChange={set("email")} /></div>
+              <div className="col-span-2"><label className="label">{t("password")}</label><input dir="ltr" className="input" type="password" minLength={6} required value={f.password} onChange={set("password")} /></div>
+            </>}
           </div>
           {role === "courier" && (
             <div className="space-y-3 rounded-2xl bg-slate-50 p-4">
@@ -75,10 +83,14 @@ function SignupForm() {
               </div>
             </div>
           )}
+          {method === "phone" && (
+            <PhoneOtp create disabled={!f.full_name || (role === "business" && !f.business_name)} onError={setErr}
+              meta={{ role, full_name: f.full_name, business_name: f.business_name, vehicle: f.vehicle, plate_number: f.plate_number, vehicle_model: f.vehicle_model, vehicle_color: f.vehicle_color }} />
+          )}
           {err && <div className="rounded-lg bg-red-50 p-2 text-sm text-red-700">{err}</div>}
           {msg && <div className="rounded-lg bg-brand-50 p-2 text-sm text-brand-700">{msg}</div>}
-          <button className="btn-primary w-full py-3" disabled={busy}>{busy ? t("loading") : t("signup")}</button>
-          <p className="text-center text-sm text-slate-500">{t("have_account")} <Link className="font-semibold text-brand-700" href="/login">{t("login")}</Link></p>
+          {method === "email" && <button className="btn-primary w-full py-3" disabled={busy}>{busy ? t("loading") : t("signup")}</button>}
+          <p className="text-center text-sm text-slate-500">{t("have_account")} <Link className="font-semibold text-brand-700" href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}>{t("login")}</Link></p>
         </form>
       </div>
     </div>
