@@ -1,17 +1,18 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Package, PackagePlus } from "lucide-react";
+import { ArrowLeft, Clock, Package, PackagePlus, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import ShipmentRow from "@/components/ShipmentRow";
-import { Avatar, Empty, Spinner } from "@/components/ui";
+import Map, { MapMarker } from "@/components/Map";
+import { Avatar, Empty, Spinner, vehicleEmoji } from "@/components/ui";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
 import { supabase } from "@/lib/supabase";
 import { isFinished } from "@/lib/delivery";
-import { money } from "@/lib/geo";
-import type { Shipment } from "@/lib/types";
+import { DEFAULT_CENTER, etaMin, money } from "@/lib/geo";
+import type { NearbyCourier, Shipment } from "@/lib/types";
 
 /** Personal (C2C) home: send a package, follow active deliveries, see recent ones. */
 export default function CustomerHome() {
@@ -20,7 +21,24 @@ export default function CustomerHome() {
   const { t } = useI18n();
   const { tm } = useTm();
   const [list, setList] = useState<Shipment[] | null>(null);
+  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
+  const [near, setNear] = useState<NearbyCourier[]>([]);
   const uid = session?.user.id;
+
+  // where am I (falls back to Tel Aviv) and which couriers are around
+  useEffect(() => {
+    if (!navigator.geolocation) { setHere(DEFAULT_CENTER); return; }
+    navigator.geolocation.getCurrentPosition((p) => setHere({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => setHere(DEFAULT_CENTER), { maximumAge: 300000, timeout: 8000 });
+  }, []);
+  useEffect(() => {
+    if (!here) return;
+    const load = () => supabase.rpc("nearby_couriers", { p_lat: here.lat, p_lng: here.lng, p_vehicle: "bike", p_limit: 10 })
+      .then(({ data }) => setNear((data as NearbyCourier[]) ?? []));
+    load();
+    const i = setInterval(() => { if (!document.hidden) load(); }, 20000);
+    return () => clearInterval(i);
+  }, [here]);
 
   useEffect(() => {
     if (!uid) return;
@@ -56,6 +74,23 @@ export default function CustomerHome() {
         </div>
         <ArrowLeft className="h-6 w-6 shrink-0 transition group-hover:-translate-x-1 ltr:rotate-180 ltr:group-hover:translate-x-1" />
       </Link>
+
+      <div className="card mb-6 overflow-hidden">
+        <div className="relative">
+          <Map className="h-64 w-full" fitKey={String(!!here)} markers={[
+            ...(here ? [{ id: "me", kind: "pickup" as const, lat: here.lat, lng: here.lng, label: "●" }] : []),
+            ...near.map((c): MapMarker => ({ id: c.id, kind: "courier", lat: c.lat, lng: c.lng, emoji: vehicleEmoji(c.vehicle), popup: `${c.full_name} · ★ ${Number(c.rating).toFixed(1)}` })),
+          ]} />
+          <div className="absolute start-3 top-3 z-[500] rounded-xl bg-white/95 px-3 py-1.5 text-xs font-bold shadow">{tm("home_map_title")}</div>
+        </div>
+        <div className="grid grid-cols-2 divide-x border-t rtl:divide-x-reverse">
+          <div className="flex items-center gap-3 p-4"><Users className="h-5 w-5 text-brand-600" />
+            <div><div className="text-xs text-slate-500">{tm("couriers_near_you")}</div><div className="text-lg font-extrabold">{near.length}</div></div></div>
+          <div className="flex items-center gap-3 p-4"><Clock className="h-5 w-5 text-brand-600" />
+            <div><div className="text-xs text-slate-500">{tm("nearest_courier")}</div>
+              <div className="text-lg font-extrabold">{near[0] ? `~${etaMin(Number(near[0].distance_km) * 1.3, near[0].vehicle)} ${tm("min_away")}` : "—"}</div></div></div>
+        </div>
+      </div>
 
       <div className="mb-8 grid grid-cols-3 gap-3">
         <div className="stat"><div className="stat-label">{t("active")}</div><div className="stat-value text-brand-600">{active.length}</div></div>

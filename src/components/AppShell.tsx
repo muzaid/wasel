@@ -54,7 +54,7 @@ export function notifTitle(title: string, t: (k: TKey) => string) {
 function useNotifTitle() {
   const { t } = useI18n();
   const { tm } = useTm();
-  return (title: string) => (["business_invite", "incoming_picked_up", "incoming_delivered"].includes(title) ? tm(title as MKey) : notifTitle(title, t));
+  return (title: string) => (["business_invite", "incoming_picked_up", "incoming_delivered", "courier_declined"].includes(title) ? tm(title as MKey) : notifTitle(title, t));
 }
 
 function Bell_() {
@@ -149,6 +149,7 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
             <RoleSwitcher />
             <LangSwitch />
             {profile && <Bell_ />}
+            {!profile && <Link href="/login" className="btn-ghost ms-1 px-4 py-2 text-sm">{t("login")}</Link>}
             {profile && (
               <Link href={activeRole === "admin" ? "/admin" : `/${activeRole}/profile`} className="ms-1" title={profile.full_name}>
                 {activeRole === "business" && business?.logo_url
