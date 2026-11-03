@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bookmark, Building2, Loader2, Radar, Search, UserRound } from "lucide-react";
 import Map from "@/components/Map";
@@ -40,6 +40,8 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
   const router = useRouter();
   const settings = useSettings();
   const [pickup, setPickup] = useState<Place | null>(null);
+  const pickupRef = useRef<Place | null>(null);
+  pickupRef.current = pickup;
   const [dropoff, setDropoff] = useState<Place | null>(null);
   const [mapMode, setMapMode] = useState<"pickup" | "dropoff">("pickup");
   const [saved, setSaved] = useState<Saved[]>([]);
@@ -71,6 +73,19 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
     clearDraft();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id]);
+  // like Uber: personal senders start with the pickup at their current location, so nearby couriers show at once
+  useEffect(() => {
+    if (mode !== "customer" || typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async (p) => {
+      const here = { lat: p.coords.latitude, lng: p.coords.longitude, address: `${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}` };
+      if (pickupRef.current) return;                    // the sender (or a restored draft) already chose a pickup
+      setPickup(here);
+      setMapMode("dropoff");
+      const address = await reverseGeocode(here.lat, here.lng, lang);
+      setPickup((cur) => (cur && cur.lat === here.lat && cur.lng === here.lng ? { ...cur, address } : cur));
+    }, () => { /* no GPS permission: the sender sets the pickup */ }, { maximumAge: 300000, timeout: 8000 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // a restored draft remembers the courier id: link it to the live list once it loads
   useEffect(() => {
     if (choice && !chosen) { const c = nearby.find((x) => x.id === choice); if (c) setChosen(c); }
