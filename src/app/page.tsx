@@ -70,7 +70,7 @@ export default function Home() {
             <h1 className="text-4xl font-extrabold leading-tight md:text-5xl">{t("tagline")}</h1>
             <p className="mt-5 max-w-lg text-lg text-slate-300">{t("hero_sub")}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup?role=customer" className="btn bg-accent px-6 py-3.5 text-base text-ink-900 hover:brightness-95">📦 {tm("send_package")}</Link>
+              <Link href="/send" className="btn bg-accent px-6 py-3.5 text-base text-ink-900 hover:brightness-95">📦 {tm("send_package")}</Link>
               <Link href="/signup?role=business" className="btn-primary px-6 py-3.5 text-base">{t("for_business")}</Link>
               <Link href="/signup?role=courier" className="btn bg-white px-6 py-3.5 text-base text-ink-900 hover:bg-slate-100">{t("for_courier")}</Link>
             </div>

@@ -32,5 +32,15 @@ To deploy this phase
 - Tests: 10 new DB checks (`supabase/tests/20_courier_dispatch.sql`) — DB suite **44/44 pass**
 - Known limit: no push to a closed app/phone yet (Phase 5: Web Push)
 
+## Choose your courier + phone sign-up (migration 006)
+- Public send page `/send`: anyone sets pickup / drop-off on the map, sees the 10 nearest available couriers
+  (photo, rating, reviews, deliveries, vehicle, distance, ETA, price) and picks one or sends to all; visitors are asked to
+  sign up and their delivery details are restored afterwards
+- Direct request to one courier (price follows that courier's vehicle); if they decline or do not answer, the sender
+  chooses another courier or sends to all; the sender is notified of a decline
+- Sign-up / login by phone with an SMS code, or by email
+- Customer home: map of couriers around you, couriers nearby, nearest ETA
+- Tests: 16 new DB checks (`supabase/tests/30_choose_courier.sql`) — DB suite **60/60 pass**; build passes
+
 ## Next: Phase 2 — Profiles & verification
 Phone OTP, password reset screen, business documents + admin approval, courier vehicles table (multiple vehicles, capacity, photos, approval), configurable verification rules.
