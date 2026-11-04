@@ -119,8 +119,8 @@ export default function CourierHome() {
 
       <div className="relative">
         <Map markers={markers} fitKey={`${!!pos}-${offer?.id}`} follow={offer ? undefined : "me"} className="h-[55vh] min-h-[320px] w-full rounded-3xl" />
-        <div className="absolute inset-x-3 top-3 z-[500] flex items-center gap-3 rounded-2xl bg-white/95 p-3 shadow-lg backdrop-blur">
-          <span className={`h-3 w-3 rounded-full ${online ? "animate-pulse bg-brand-500" : "bg-slate-300"}`} />
+        <div className="absolute inset-x-3 top-3 z-[500] flex items-center gap-3 rounded-full bg-white/95 p-3 ps-5 shadow-lg backdrop-blur">
+          <span className={`h-3 w-3 rounded-full ${online ? "animate-pulse bg-green-500 ring-4 ring-green-100" : "bg-ink-300"}`} />
           <div className="flex-1 text-sm font-semibold">{online ? t("you_are_online") : t("you_are_offline")}</div>
           <button disabled={!verified} onClick={() => setOnline(!online)} className={online ? "btn-dark" : "btn-primary"}>
             <Power className="h-4 w-4" />{online ? t("go_offline") : t("go_online")}
@@ -130,36 +130,36 @@ export default function CourierHome() {
 
         {offer && (
           <div className="absolute inset-x-0 bottom-0 z-[600] animate-slideup p-3">
-            <div className="overflow-hidden rounded-3xl bg-ink-900 text-white shadow-2xl">
-              <div className="h-1 bg-white/10"><div className="h-full bg-brand-500 transition-all" style={{ width: `${100 - ((now - new Date(offer.created_at).getTime()) / timeout) * 100}%` }} /></div>
-              <div className="p-5">
+            <div className="overflow-hidden rounded-[32px] bg-white text-ink-900 shadow-[0_20px_50px_rgba(23,38,46,.35)]">
+              <div className="h-1.5 bg-ink-100"><div className="h-full bg-brand-600 transition-all" style={{ width: `${100 - ((now - new Date(offer.created_at).getTime()) / timeout) * 100}%` }} /></div>
+              <div className="p-6">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     {offer.shipments.business
                       ? <Avatar src={offer.shipments.business.logo_url} name={offer.shipments.business.business_name} size={32} square />
                       : <Avatar src={offer.shipments.sender?.avatar_url} name={offer.shipments.sender?.full_name} size={32} />}
                     <div className="min-w-0">
-                      <div className="text-sm font-bold text-brand-400">{t("new_offer")} <span className="chip ms-1 bg-white/10 px-1.5 py-0.5 text-[10px] text-white">{tm(`type_${offer.shipments.delivery_type ?? "b2c"}`)}</span></div>
-                      <div className="truncate text-xs text-slate-300">
+                      <div className="text-sm font-bold"><span className="chip me-1 bg-sun-50 text-sun-700">{t("new_offer")}</span> <span className="chip bg-ink-100 px-2 py-0.5 text-[11px] text-ink-700">{tm(`type_${offer.shipments.delivery_type ?? "b2c"}`)}</span></div>
+                      <div className="truncate text-xs text-ink-500">
                         {offer.shipments.business?.business_name || offer.shipments.sender?.full_name} · {offer.shipments.business ? tm("sender_business") : tm("sender_individual")}
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-slate-400">{offer.distance_km} {t("km")} {t("away")}</div>
+                  <div className="shrink-0 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">{offer.distance_km} {t("km")} {t("away")}</div>
                 </div>
                 <div className="mb-4 flex items-end justify-between">
-                  <div><div className="text-xs text-slate-400">{t("earn")}</div><div className="text-4xl font-extrabold tabular-nums">{money(offer.shipments.courier_earning)}</div></div>
-                  <div className="text-end text-sm text-slate-300">{offer.shipments.distance_km} {t("km")} · {t(offer.shipments.package_size)}{offer.shipments.is_fragile ? " · ⚠️" : ""}</div>
+                  <div><div className="text-xs font-semibold text-ink-500">{t("earn")}</div><div className="text-5xl font-extrabold tracking-tight tabular-nums">{money(offer.shipments.courier_earning)}</div></div>
+                  <div className="text-end text-sm text-ink-500">{offer.shipments.distance_km} {t("km")} · {t(offer.shipments.package_size)}{offer.shipments.is_fragile ? " · ⚠️" : ""}</div>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-brand-400" /><span className="truncate">{offer.shipments.pickup_address}</span></div>
-                  <div className="flex gap-2"><Navigation className="h-4 w-4 shrink-0 text-red-400" /><span className="truncate">{offer.shipments.dropoff_address}</span></div>
-                  {offer.shipments.cod_amount > 0 && <div className="flex gap-2 text-amber-300"><Banknote className="h-4 w-4" />{t("collect_cash")}: {money(offer.shipments.cod_amount)}</div>}
+                <div className="space-y-3 rounded-2xl bg-mint p-4 text-[15px] font-semibold">
+                  <div className="flex gap-2"><MapPin className="h-5 w-5 shrink-0 text-brand-600" /><span className="truncate">{offer.shipments.pickup_address}</span></div>
+                  <div className="flex gap-2"><Navigation className="h-5 w-5 shrink-0 text-peach-500" /><span className="truncate">{offer.shipments.dropoff_address}</span></div>
+                  {offer.shipments.cod_amount > 0 && <div className="flex gap-2 text-sun-700"><Banknote className="h-4 w-4" />{t("collect_cash")}: {money(offer.shipments.cod_amount)}</div>}
                 </div>
-                {msg && <div className="mt-3 rounded-lg bg-red-500/20 p-2 text-center text-sm text-red-200">{msg}</div>}
-                <div className="mt-4 grid grid-cols-[1fr_2fr] gap-2">
-                  <button onClick={() => decline(offer)} className="btn bg-white/10 py-3.5 text-white">{t("decline")}</button>
-                  <button disabled={busy || !!active} onClick={() => accept(offer)} className="btn-primary py-3.5 text-base">{t("accept")} · {Math.max(0, Math.ceil((timeout - (now - new Date(offer.created_at).getTime())) / 1000))}s</button>
+                {msg && <div className="mt-3 rounded-xl bg-red-50 p-2 text-center text-sm text-red-700">{msg}</div>}
+                <div className="mt-5 grid grid-cols-[1fr_2fr] gap-2">
+                  <button onClick={() => decline(offer)} className="btn rounded-[20px] bg-ink-100 py-4 text-base text-ink-900">{t("decline")}</button>
+                  <button disabled={busy || !!active} onClick={() => accept(offer)} className="btn-primary rounded-[20px] py-4 text-base">{t("accept")} · {Math.max(0, Math.ceil((timeout - (now - new Date(offer.created_at).getTime())) / 1000))}s</button>
                 </div>
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function CourierHome() {
 
       {active && (
         <Link href={`/courier/job/${active.id}`} className="card mt-4 flex items-center gap-4 border-brand-300 p-4">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand-600 text-2xl">📦</div>
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-50 text-2xl">📦</div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-2"><span className="text-sm font-bold">{t("active_job")}</span><StatusBadge s={active.status} /></div>
             <div className="truncate text-sm text-slate-500">{active.dropoff_address}</div>

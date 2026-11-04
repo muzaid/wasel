@@ -132,7 +132,7 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
   const isActive = (h: string) => (["/business", "/courier", "/admin", "/customer"].includes(h) ? path === h : path.startsWith(h));
 
   return (
-    <div className="min-h-screen pb-20 md:pb-0">
+    <div className="min-h-screen pb-28 md:pb-0">
       <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 backdrop-blur">
         <div className={`mx-auto flex h-16 items-center gap-4 px-4 ${wide ? "max-w-7xl" : "max-w-5xl"}`}>
           <Link href="/"><Logo /></Link>
@@ -140,7 +140,7 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
           <nav className="ms-4 hidden gap-1 md:flex">
             {nav.map((n) => (
               <Link key={n.href} href={n.href}
-                className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive(n.href) ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-100"}`}>
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${isActive(n.href) ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-100"}`}>
                 {label(n.label)}
               </Link>
             ))}
@@ -167,10 +167,10 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
       </header>
       <main className={`mx-auto px-4 py-6 ${wide ? "max-w-7xl" : "max-w-5xl"}`}>{children}</main>
       {nav.length > 0 && (
-        <nav className="fixed inset-x-0 bottom-0 z-40 grid border-t border-slate-200 bg-white/95 backdrop-blur md:hidden"
+        <nav className="fixed inset-x-3 bottom-3 z-40 grid rounded-[26px] bg-white/95 p-1.5 shadow-[0_10px_30px_rgba(23,38,46,.15)] backdrop-blur md:hidden"
           style={{ gridTemplateColumns: `repeat(${Math.min(nav.length, 5)}, 1fr)` }}>
           {nav.slice(0, 5).map((n) => (
-            <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold ${isActive(n.href) ? "text-brand-600" : "text-slate-500"}`}>
+            <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-0.5 rounded-[20px] py-2 text-[11px] font-semibold ${isActive(n.href) ? "bg-brand-50 text-brand-700" : "text-slate-500"}`}>
               {n.icon}{label(n.label)}
             </Link>
           ))}
