@@ -9,9 +9,9 @@ export function Logo({ size = 32, light = false }: { size?: number; light?: bool
   return (
     <span className="inline-flex items-center gap-2 font-extrabold tracking-tight">
       <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden>
-        <rect width="40" height="40" rx="11" fill="#059669" />
+        <rect width="40" height="40" rx="13" fill="#0B7A57" />
         <path d="M9 13l5 15 6-11 6 11 5-15" stroke="#fff" strokeWidth="3.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="31" cy="11" r="3" fill="#f59e0b" />
+        <circle cx="31" cy="11" r="3" fill="#FFC94D" />
       </svg>
       <span className={light ? "text-white text-lg" : "text-ink-900 text-lg"}>{t("app")}</span>
     </span>
@@ -22,10 +22,10 @@ export function LangSwitch({ dark = false }: { dark?: boolean }) {
   const { lang, setLang } = useI18n();
   const opts: [Lang, string][] = [["ar", "ع"], ["en", "EN"], ["he", "עב"]];
   return (
-    <div className={`inline-flex rounded-full p-0.5 text-xs font-bold ${dark ? "bg-white/10" : "bg-slate-100"}`}>
+    <div className={`inline-flex rounded-full p-0.5 text-xs font-bold ${dark ? "bg-white/10" : "bg-white shadow-sm ring-1 ring-[#E6EEEB]"}`}>
       {opts.map(([k, l]) => (
         <button key={k} onClick={() => setLang(k)}
-          className={`rounded-full px-2.5 py-1 transition ${lang === k ? (dark ? "bg-white text-ink-900" : "bg-white shadow text-ink-900") : dark ? "text-white/70" : "text-slate-500"}`}>
+          className={`rounded-full px-3 py-1.5 transition ${lang === k ? (dark ? "bg-white text-ink-900" : "bg-ink-900 text-white") : dark ? "text-white/70" : "text-slate-500"}`}>
           {l}
         </button>
       ))}

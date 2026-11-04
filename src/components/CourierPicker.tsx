@@ -46,46 +46,45 @@ export default function CourierPicker({ pickup, vehicle, km, size, fragile, cod,
   return (
     <section className="card space-y-3 p-5">
       <div>
-        <div className="font-bold">{tm("choose_courier")}</div>
-        <p className="text-xs text-slate-500">{tm("choose_courier_hint")}</p>
+        <div className="text-xl font-extrabold">{tm("choose_courier")}</div>
+        <p className="text-sm text-ink-500">{tm("choose_courier_hint")}</p>
       </div>
-      {!pickup && <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">{tm("enter_pickup_first")}</div>}
+      {!pickup && <div className="rounded-2xl bg-mint p-4 text-sm text-ink-500">{tm("enter_pickup_first")}</div>}
       {pickup && (
         <>
           <button type="button" onClick={() => onSelect(null)}
-            className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-start transition ${selected === null ? "border-brand-600 bg-brand-50" : "border-slate-200 hover:bg-slate-50"}`}>
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink-900 text-brand-400"><Radar className="h-5 w-5" /></div>
+            className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-start transition ${selected === null ? "border-ink-900 bg-ink-100" : "border-[#E6EEEB] hover:bg-mint"}`}>
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink-900 text-sun-400"><Radar className="h-5 w-5" /></div>
             <div className="min-w-0 flex-1">
               <div className="font-semibold">{tm("send_to_all")}{list ? ` (${list.length})` : ""}</div>
-              <div className="text-xs text-slate-500">{tm("send_to_all_hint")}</div>
+              <div className="text-xs text-ink-500">{tm("send_to_all_hint")}</div>
             </div>
-            {allPrice !== null && <div className="font-bold tabular-nums">{money(allPrice)}</div>}
+            {allPrice !== null && <div className="text-lg font-extrabold tabular-nums">{money(allPrice)}</div>}
           </button>
-          {list && list.length === 0 && <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{tm("no_couriers_near")}</div>}
+          {list && list.length === 0 && <div className="rounded-2xl bg-sun-50 p-4 text-sm text-sun-700">{tm("no_couriers_near")}</div>}
           <div className="max-h-[420px] space-y-2 overflow-y-auto">
             {list?.map((c) => {
               const p = priceFor(c.vehicle);
               const on = selected === c.id;
               return (
                 <button type="button" key={c.id} onClick={() => onSelect(c.id, c)}
-                  className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-start transition ${on ? "border-brand-600 bg-brand-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                  className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-start transition ${on ? "border-brand-600 bg-[#F1FAF6]" : "border-[#E6EEEB] hover:bg-mint"}`}>
                   <div className="relative">
-                    <Avatar src={c.avatar_url} name={c.full_name} size={44} />
+                    <Avatar src={c.avatar_url} name={c.full_name} size={48} />
                     <span className="absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-white text-sm shadow">{vehicleEmoji(c.vehicle)}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{c.full_name}</div>
-                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
-                      <span className="inline-flex items-center gap-0.5 font-semibold text-amber-600"><Star className="h-3 w-3 fill-current" />{Number(c.rating).toFixed(1)}</span>
+                    <div className="truncate font-bold">{c.full_name} <span className="inline-flex items-center gap-0.5 text-sm font-semibold text-sun-700"><Star className="h-3.5 w-3.5 fill-current" />{Number(c.rating).toFixed(1)}</span></div>
+                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
                       <span>({c.rating_count} {tm("reviews")})</span>
                       <span>· {c.deliveries} {tm("deliveries_n")}</span>
                     </div>
-                    <div className="truncate text-xs text-slate-400">{t(c.vehicle)}{c.vehicle_model ? ` · ${c.vehicle_model}` : ""}{c.vehicle_color ? ` · ${c.vehicle_color}` : ""}</div>
+                    <div className="truncate text-xs text-ink-500">{t(c.vehicle)}{c.vehicle_model ? ` · ${c.vehicle_model}` : ""}{c.vehicle_color ? ` · ${c.vehicle_color}` : ""}</div>
                   </div>
                   <div className="shrink-0 text-end">
-                    {p !== null && <div className="font-bold tabular-nums">{money(p)}</div>}
-                    <div className="text-xs text-slate-500">{etaMin(Number(c.distance_km) * 1.3, c.vehicle)} {tm("min_away")}</div>
-                    <div className="text-[11px] text-slate-400">{Number(c.distance_km).toFixed(1)} {t("km")}</div>
+                    {p !== null && <div className="text-lg font-extrabold tabular-nums">{money(p)}</div>}
+                    <div className="mt-0.5 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">{etaMin(Number(c.distance_km) * 1.3, c.vehicle)} {tm("min_away")}</div>
+                    <div className="mt-0.5 text-[11px] text-ink-500">{Number(c.distance_km).toFixed(1)} {t("km")}</div>
                   </div>
                 </button>
               );
