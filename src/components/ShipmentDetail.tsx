@@ -120,45 +120,45 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
       </div>
       <div className="mb-5"><Progress status={s.status} /></div>
       {acceptedAt && now - acceptedAt < 15000 && s.status === "accepted" && (
-        <div className="mb-4 flex animate-slideup items-center gap-3 rounded-2xl bg-brand-600 p-4 font-bold text-white shadow-lg">
-          <span className="text-2xl">✅</span>
+        <div className="mb-4 flex animate-slideup items-center gap-3 rounded-3xl bg-brand-50 p-4 font-bold text-brand-700 shadow-sm">
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-600 text-white">✓</span>
           <span className="flex-1">{tm("courier_accepted")}{courier ? ` — ${courier.name}` : ""}</span>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
         <div className="space-y-4">
-          <div className="relative overflow-hidden rounded-2xl">
+          <div className="relative overflow-hidden rounded-[28px]">
             <Map markers={markers} line={trail.length > 1 ? trail : undefined} fitKey={`${s.id}-${s.status}`}
               circle={s.status === "searching" ? { lat: s.pickup_lat, lng: s.pickup_lng, km: Number(s.dispatch_radius_km) } : null}
-              className="h-[360px] w-full rounded-2xl lg:h-[520px]" />
+              className="h-[360px] w-full rounded-[28px] lg:h-[520px]" />
             {s.status === "searching" && s.dispatch_mode === "direct" && (
-              <div className="absolute inset-x-3 bottom-3 z-[500] rounded-2xl bg-ink-900/95 p-4 text-white shadow-xl">
+              <div className="absolute inset-x-3 bottom-3 z-[500] rounded-3xl bg-white p-4 text-ink-900 shadow-[0_12px_28px_rgba(23,38,46,.18)]">
                 <div className="flex items-center gap-3">
                   {direct && <Avatar src={direct.avatar_url} name={direct.name} size={44} />}
                   <div className="min-w-0 flex-1">
                     <div className="font-bold">{directWaiting ? tm("waiting_courier") : direct?.offer_status === "declined" ? tm("courier_declined") : tm("courier_no_answer")}</div>
-                    {direct && <div className="truncate text-xs text-slate-300">{direct.name} · {vehicleEmoji(direct.vehicle)} {direct.vehicle_model ?? ""} · ★ {Number(direct.rating).toFixed(1)}</div>}
+                    {direct && <div className="truncate text-xs text-ink-500">{direct.name} · {vehicleEmoji(direct.vehicle)} {direct.vehicle_model ?? ""} · ★ {Number(direct.rating).toFixed(1)}</div>}
                   </div>
                   {directWaiting && <div className="font-mono text-lg tabular-nums">{directLeft}s</div>}
                 </div>
                 {directFailed && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" disabled={pickBusy} onClick={() => setPicking(true)} className="btn bg-white/10 py-2.5 text-white">{tm("choose_another")}</button>
+                    <button type="button" disabled={pickBusy} onClick={() => setPicking(true)} className="btn bg-ink-100 py-2.5 text-ink-900">{tm("choose_another")}</button>
                     <button type="button" disabled={pickBusy} onClick={sendToAll} className="btn-primary py-2.5">{tm("send_to_all")}</button>
                   </div>
                 )}
               </div>
             )}
             {s.status === "searching" && s.dispatch_mode !== "direct" && (
-              <div className="absolute inset-x-3 bottom-3 z-[500] flex items-center gap-4 rounded-2xl bg-ink-900/95 p-4 text-white shadow-xl">
+              <div className="absolute inset-x-3 bottom-3 z-[500] flex items-center gap-4 rounded-3xl bg-white p-4 text-ink-900 shadow-[0_12px_28px_rgba(23,38,46,.18)]">
                 <div className="relative grid h-12 w-12 place-items-center">
-                  <span className="absolute inset-0 animate-ping2 rounded-full border-2 border-brand-400" />
-                  <Radar className="h-6 w-6 text-brand-400" />
+                  <span className="absolute inset-0 animate-ping2 rounded-full border-2 border-brand-500" />
+                  <Radar className="h-6 w-6 text-brand-600" />
                 </div>
                 <div className="flex-1">
                   <div className="font-bold">{t("searching_title")}</div>
-                  <div className="text-xs text-slate-300">{offers} {t("notified")} · {t("radius")} {Number(s.dispatch_radius_km)} {t("km")} · {t("round")} {s.dispatch_round}</div>
+                  <div className="text-xs text-ink-500">{offers} {t("notified")} · {t("radius")} {Number(s.dispatch_radius_km)} {t("km")} · {t("round")} {s.dispatch_round}</div>
                 </div>
                 <div className="font-mono text-lg tabular-nums">{Math.floor(searchSec / 60)}:{String(searchSec % 60).padStart(2, "0")}</div>
               </div>
@@ -173,7 +173,7 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
 
           <div className="card grid gap-4 p-5 sm:grid-cols-2">
             <div><div className="text-xs font-bold text-brand-700">A · {t("pickup")}</div><div className="text-sm">{s.pickup_address}</div><div className="text-xs text-slate-400">{s.pickup_contact} {s.pickup_phone}</div></div>
-            <div><div className="text-xs font-bold text-red-600">B · {t("dropoff")}</div><div className="text-sm">{s.dropoff_address}</div><div className="text-xs text-slate-400">{s.recipient_name} · <span dir="ltr">{s.recipient_phone}</span></div></div>
+            <div><div className="text-xs font-bold text-peach-500">B · {t("dropoff")}</div><div className="text-sm">{s.dropoff_address}</div><div className="text-xs text-slate-400">{s.recipient_name} · <span dir="ltr">{s.recipient_phone}</span></div></div>
             <div className="text-sm"><span className="text-slate-400">{t("package")}:</span> {t(s.package_size)} {s.is_fragile && "· ⚠️"} {s.package_desc}</div>
             <div className="text-sm"><span className="text-slate-400">{t("distance")}:</span> {s.distance_km} {t("km")} {s.cod_amount > 0 && <>· <b className="text-amber-700">COD {money(s.cod_amount)}</b></>}</div>
           </div>
@@ -186,10 +186,10 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
         <div className="space-y-4">
           {courier && !["cancelled", "expired"].includes(s.status) && <CourierCard c={courier} eta={eta} />}
           {!["delivered", "cancelled", "expired"].includes(s.status) && (
-            <div className="card flex items-center gap-3 bg-ink-900 p-4 text-white">
-              <KeyRound className="h-5 w-5 text-brand-400" />
-              <div className="flex-1 text-xs text-slate-300">{t("give_code")}</div>
-              <div dir="ltr" className="font-mono text-2xl font-bold tracking-[.3em]">{s.delivery_otp}</div>
+            <div className="flex items-center gap-3 rounded-3xl bg-sun-50 p-4 text-ink-900">
+              <KeyRound className="h-5 w-5 text-sun-700" />
+              <div className="flex-1 text-xs font-semibold text-sun-700">{t("give_code")}</div>
+              <div dir="ltr" className="text-3xl font-extrabold tracking-[.25em]">{s.delivery_otp}</div>
             </div>
           )}
           {!["cancelled", "expired"].includes(s.status) && <ShareTracking token={s.tracking_token} recipientPhone={s.recipient_phone} code={s.code} />}
