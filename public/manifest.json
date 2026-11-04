@@ -4,8 +4,8 @@
   "description": "Courier on demand — nearest driver, live tracking.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#059669",
+  "background_color": "#F6FAF8",
+  "theme_color": "#0B7A57",
   "dir": "rtl",
   "lang": "ar",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]

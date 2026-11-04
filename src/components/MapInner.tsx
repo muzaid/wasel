@@ -26,7 +26,7 @@ function icon(m: MapMarker) {
       html: `<div class="wasel-courier ${m.kind === "courier_idle" ? "idle" : ""}">${m.emoji ?? "🛵"}</div>`,
     });
   }
-  const color = m.kind === "pickup" ? "#059669" : "#ef4444";
+  const color = m.kind === "pickup" ? "#0B7A57" : "#F0745A";
   return L.divIcon({
     className: "wasel-pin", iconSize: [30, 42], iconAnchor: [15, 38],
     html: `<div style="background:${color}"><span>${m.label ?? (m.kind === "pickup" ? "A" : "B")}</span></div>`,
@@ -76,8 +76,8 @@ export default function MapInner({ markers = [], line, circle, onPick, fitKey, f
       if (mk.popup) mm.bindPopup(mk.popup);
       mm.addTo(g);
     });
-    if (line && line.length > 1) L.polyline(line, { color: "#059669", weight: 4, opacity: 0.8, dashArray: "1 8", lineCap: "round" }).addTo(g);
-    if (circle) L.circle([circle.lat, circle.lng], { radius: circle.km * 1000, color: "#10b981", weight: 1, fillOpacity: 0.06 }).addTo(g);
+    if (line && line.length > 1) L.polyline(line, { color: "#0B7A57", weight: 5, opacity: 0.8, dashArray: "1 8", lineCap: "round" }).addTo(g);
+    if (circle) L.circle([circle.lat, circle.lng], { radius: circle.km * 1000, color: "#0B7A57", weight: 1, fillOpacity: 0.06 }).addTo(g);
   }, [markers, line, circle]);
 
   // moving markers (couriers) — animate position instead of re-creating

@@ -5,9 +5,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: { 50: "#ecfdf5", 100: "#d1fae5", 400: "#34d399", 500: "#10b981", 600: "#059669", 700: "#047857", 900: "#064e3b" },
-        ink: { 900: "#0b1220", 800: "#111a2e", 700: "#1c2740", 500: "#64748b", 300: "#cbd5e1", 100: "#f1f5f9" },
-        accent: "#f59e0b",
+        brand: { 50: "#E3F5EE", 100: "#C9EBDD", 200: "#A4DCC6", 300: "#6FC6A4", 400: "#3FAF85", 500: "#159A6C", 600: "#0B7A57", 700: "#08583F", 900: "#05392A" },
+        ink: { 900: "#17262E", 800: "#22343D", 700: "#33464F", 500: "#5A6B73", 300: "#D5DEDA", 100: "#F1F4F3" },
+        accent: "#FFC94D",
+        sun: { 50: "#FFF4D6", 400: "#FFC94D", 700: "#8A5A00" },
+        sky2: { 50: "#DCEEFF", 700: "#1F5A99" },
+        peach: { 50: "#FDE7E1", 500: "#F0745A" },
+        mint: "#F6FAF8",
+        // warm, slightly green greys (the friendly redesign) instead of Tailwind's blue-ish slate
+        slate: { 50: "#F6FAF8", 100: "#EEF3F1", 200: "#E1EAE6", 300: "#C9D5D0", 400: "#8A9AA1", 500: "#5A6B73", 600: "#46575F", 700: "#33464F", 800: "#22343D", 900: "#17262E" },
       },
       fontFamily: { sans: ["var(--font-sans)", "system-ui", "sans-serif"] },
       keyframes: {
