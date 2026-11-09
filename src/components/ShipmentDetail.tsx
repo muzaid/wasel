@@ -1,12 +1,14 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, KeyRound, Radar, XCircle } from "lucide-react";
+import { ArrowRight, HandCoins, KeyRound, LifeBuoy, Radar, XCircle } from "lucide-react";
 import Map, { MapMarker } from "@/components/Map";
 import { Avatar, CourierCard, CourierInfo, Progress, ShareTracking, Spinner, StatusBadge, Stars, Timeline, vehicleEmoji } from "@/components/ui";
 import CourierPicker from "@/components/CourierPicker";
 import { useI18n, TKey } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
+import { useTs } from "@/lib/i18n-support";
+import { REFUNDABLE } from "@/lib/support";
 import { canCancel as cancellable } from "@/lib/delivery";
 import { supabase } from "@/lib/supabase";
 import { beep, errKey, useLiveShipment, useSettings } from "@/lib/hooks";
@@ -19,6 +21,7 @@ interface Direct { courier_id: string; name: string; avatar_url: string | null; 
 export default function ShipmentDetail({ id, backHref }: { id: string; backHref: string }) {
   const { t } = useI18n();
   const { tm } = useTm();
+  const { ts } = useTs();
   const settings = useSettings();
   const { shipment: s, events, courierPos, trail, offers, reload } = useLiveShipment(id);
   const [direct, setDirect] = useState<Direct | null>(null);
@@ -116,7 +119,15 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
         <h1 className="text-xl font-extrabold">#{s.code}</h1>
         <StatusBadge s={s.status} />
         <span className="chip bg-ink-900 text-white" title={tm(`type_${s.delivery_type ?? "b2c"}_long`)}>{tm(`type_${s.delivery_type ?? "b2c"}`)}</span>
-        <div className="ms-auto text-2xl font-extrabold tabular-nums">{money(s.price)}</div>
+        <div className="ms-auto text-end">
+          <div className="text-2xl font-extrabold tabular-nums">{money(Number(s.price) - Number(s.discount_amount ?? 0) - Number(s.credit_used ?? 0))}</div>
+          {(Number(s.discount_amount) > 0 || Number(s.credit_used) > 0) && (
+            <div className="text-xs font-semibold text-brand-700">
+              <span className="text-ink-500 line-through">{money(s.price)}</span>
+              {Number(s.discount_amount) > 0 && ` · ${ts("discount")} −${money(s.discount_amount!)}`}{Number(s.credit_used) > 0 && ` · ${ts("credit_used")} −${money(s.credit_used!)}`}
+            </div>
+          )}
+        </div>
       </div>
       <div className="mb-5"><Progress status={s.status} /></div>
       {acceptedAt && now - acceptedAt < 15000 && s.status === "accepted" && (
@@ -206,6 +217,10 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
 
           <div className="card p-5"><div className="mb-3 font-bold">{t("timeline")}</div><Timeline events={events} /></div>
 
+          <div className="grid grid-cols-2 gap-2">
+            {REFUNDABLE.includes(s.status) && <Link href={`/refunds?shipment=${s.id}`} className="btn-ghost"><HandCoins className="h-4 w-4" />{ts("ask_refund")}</Link>}
+            <Link href={`/help?new=delivery&shipment=${s.id}`} className={`btn-ghost ${REFUNDABLE.includes(s.status) ? "" : "col-span-2"}`}><LifeBuoy className="h-4 w-4" />{ts("get_help")}</Link>
+          </div>
           {canCancel && !cancelOpen && <button onClick={() => setCancelOpen(true)} className="btn-danger w-full"><XCircle className="h-4 w-4" />{t("cancel_shipment")}</button>}
           {cancelOpen && (
             <div className="card space-y-2 p-4">

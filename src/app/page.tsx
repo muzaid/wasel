@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { DEFAULT_CENTER } from "@/lib/geo";
 import { useI18n, TKey } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
+import { useTs } from "@/lib/i18n-support";
 import { useAuth, homeFor } from "@/lib/auth";
 import { LangSwitch, Logo } from "@/components/ui";
 import DeliveryForm from "@/components/DeliveryForm";
@@ -23,6 +24,7 @@ const features: [TKey, TKey, React.ReactNode][] = [
 export default function Home() {
   const { t } = useI18n();
   const { tm } = useTm();
+  const { ts } = useTs();
   const { profile } = useAuth();
   const router = useRouter();
   useEffect(() => { if (profile) router.replace(homeFor(profile.role)); }, [profile, router]);
@@ -124,7 +126,12 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <footer className="border-t border-[#E1EAE6] py-8 text-center text-sm text-ink-500">© {new Date().getFullYear()} {t("app")} · Tel Aviv · Jerusalem · Haifa</footer>
+      <footer className="border-t border-[#E1EAE6] py-8 text-center text-sm text-ink-500">
+        <nav className="mb-3 flex flex-wrap justify-center gap-x-5 gap-y-2 font-semibold text-ink-700">
+          <Link href="/about">{ts("about_us")}</Link><Link href="/contact">{ts("contact_us")}</Link><Link href="/help">{ts("help_desk")}</Link>
+        </nav>
+        © {new Date().getFullYear()} {t("app")} · Tel Aviv · Jerusalem · Haifa
+      </footer>
     </div>
   );
 }
