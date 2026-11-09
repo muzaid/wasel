@@ -2,7 +2,7 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LayoutDashboard, LogOut, PackagePlus, Settings, Users, Wallet, UserRound, Truck, Package, Bike, Home } from "lucide-react";
+import { Bell, LayoutDashboard, LogOut, PackagePlus, Settings, Users, Wallet, UserRound, Truck, Package, Bike, Home, HandCoins, Headphones, BadgePercent } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
@@ -10,32 +10,36 @@ import type { Notification, Role } from "@/lib/types";
 import { Avatar, LangSwitch, Logo } from "./ui";
 import RoleSwitcher from "./RoleSwitcher";
 import { useTm, MKey } from "@/lib/i18n-marketplace";
+import { useTs, SKey } from "@/lib/i18n-support";
 
-type NavItem = { href: string; label: TKey | `m:${MKey}`; icon: ReactNode };
+type NavItem = { href: string; label: TKey | `m:${MKey}` | `s:${SKey}`; icon: ReactNode };
 const NAV: Record<Role, NavItem[]> = {
   customer: [
     { href: "/customer", label: "dashboard", icon: <Home className="h-5 w-5" /> },
     { href: "/customer/new", label: "m:send_package", icon: <PackagePlus className="h-5 w-5" /> },
     { href: "/customer/history", label: "history", icon: <Package className="h-5 w-5" /> },
-    { href: "/customer/profile", label: "profile", icon: <UserRound className="h-5 w-5" /> },
+    { href: "/account", label: "s:account", icon: <UserRound className="h-5 w-5" /> },
   ],
   business: [
     { href: "/business", label: "dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
     { href: "/business/new", label: "new_shipment", icon: <PackagePlus className="h-5 w-5" /> },
     { href: "/business/history", label: "history", icon: <Package className="h-5 w-5" /> },
     { href: "/business/team", label: "m:team", icon: <Users className="h-5 w-5" /> },
-    { href: "/business/profile", label: "profile", icon: <UserRound className="h-5 w-5" /> },
+    { href: "/account", label: "s:account", icon: <UserRound className="h-5 w-5" /> },
   ],
   courier: [
     { href: "/courier", label: "dashboard", icon: <Bike className="h-5 w-5" /> },
     { href: "/courier/earnings", label: "earnings", icon: <Wallet className="h-5 w-5" /> },
-    { href: "/courier/profile", label: "profile", icon: <UserRound className="h-5 w-5" /> },
+    { href: "/account", label: "s:account", icon: <UserRound className="h-5 w-5" /> },
   ],
   admin: [
     { href: "/admin", label: "dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
     { href: "/admin/shipments", label: "shipments", icon: <Package className="h-5 w-5" /> },
     { href: "/admin/couriers", label: "couriers", icon: <Truck className="h-5 w-5" /> },
     { href: "/admin/users", label: "users", icon: <Users className="h-5 w-5" /> },
+    { href: "/admin/refunds", label: "s:refunds", icon: <HandCoins className="h-5 w-5" /> },
+    { href: "/admin/tickets", label: "s:help_desk", icon: <Headphones className="h-5 w-5" /> },
+    { href: "/admin/coupons", label: "s:coupons", icon: <BadgePercent className="h-5 w-5" /> },
     { href: "/admin/finance", label: "finance", icon: <Wallet className="h-5 w-5" /> },
     { href: "/admin/settings", label: "settings", icon: <Settings className="h-5 w-5" /> },
   ],
@@ -54,7 +58,10 @@ export function notifTitle(title: string, t: (k: TKey) => string) {
 function useNotifTitle() {
   const { t } = useI18n();
   const { tm } = useTm();
-  return (title: string) => (["business_invite", "incoming_picked_up", "incoming_delivered", "courier_declined"].includes(title) ? tm(title as MKey) : notifTitle(title, t));
+  const { ts } = useTs();
+  const SUPPORT_N = ["refund_requested", "refund_approved", "refund_rejected", "ticket_new", "ticket_reply", "ticket_answered"];
+  return (title: string) => SUPPORT_N.includes(title) ? ts(`n_${title}` as SKey)
+    : (["business_invite", "incoming_picked_up", "incoming_delivered", "courier_declined"].includes(title) ? tm(title as MKey) : notifTitle(title, t));
 }
 
 function Bell_() {
@@ -125,7 +132,8 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
   const { profile, business, activeRole, signOut } = useAuth();
   const { t } = useI18n();
   const { tm } = useTm();
-  const label = (l: NavItem["label"]) => (l.startsWith("m:") ? tm(l.slice(2) as MKey) : t(l as TKey));
+  const { ts } = useTs();
+  const label = (l: NavItem["label"]) => (l.startsWith("m:") ? tm(l.slice(2) as MKey) : l.startsWith("s:") ? ts(l.slice(2) as SKey) : t(l as TKey));
   const path = usePathname();
   const router = useRouter();
   const nav = activeRole ? NAV[activeRole] : [];
@@ -151,7 +159,7 @@ export default function AppShell({ children, wide = false }: { children: ReactNo
             {profile && <Bell_ />}
             {!profile && <Link href="/login" className="btn-ghost ms-1 px-4 py-2 text-sm">{t("login")}</Link>}
             {profile && (
-              <Link href={activeRole === "admin" ? "/admin" : `/${activeRole}/profile`} className="ms-1" title={profile.full_name}>
+              <Link href="/account" className="ms-1" title={profile.full_name}>
                 {activeRole === "business" && business?.logo_url
                   ? <Avatar src={business.logo_url} name={business.business_name} size={34} square />
                   : <Avatar src={profile.avatar_url} name={profile.full_name} size={34} />}
