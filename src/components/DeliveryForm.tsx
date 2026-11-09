@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bookmark, Building2, Loader2, Radar, Search, UserRound } from "lucide-react";
+import { Bookmark, Building2, Loader2, Radar, Search, Tag, UserRound, Wallet, X } from "lucide-react";
 import Map from "@/components/Map";
 import AddressField, { Place } from "@/components/AddressField";
 import { Avatar, vehicleEmoji } from "@/components/ui";
@@ -10,6 +10,7 @@ import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { useAuth } from "@/lib/auth";
 import { useI18n, TKey } from "@/lib/i18n";
 import { useTm } from "@/lib/i18n-marketplace";
+import { useTs, supportErr } from "@/lib/i18n-support";
 import { supabase } from "@/lib/supabase";
 import { useSettings } from "@/lib/hooks";
 import { deliveryType } from "@/lib/delivery";
@@ -59,6 +60,14 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
   const [chosen, setChosen] = useState<NearbyCourier | null>(null);
   const [nearby, setNearby] = useState<NearbyCourier[]>([]);
   const [restored, setRestored] = useState(false);
+  // coupon & Wasel credit (checked live; applied on the server right after the delivery is created)
+  const { ts } = useTs();
+  const [codeInput, setCodeInput] = useState("");
+  const [coupon, setCoupon] = useState<{ code: string; discount: number; title: string | null } | null>(null);
+  const [couponErr, setCouponErr] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [creditBal, setCreditBal] = useState(0);
+  const [useCredit, setUseCredit] = useState(false);
 
   // details filled in before logging in come back here after sign-up
   useEffect(() => {
@@ -125,6 +134,30 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
   const q = settings && km ? quote(settings, km, f.package_size, priceVehicle, f.is_fragile, Number(f.cod_amount) || 0) : null;
   const type = deliveryType(mode === "business" ? business?.id : null, toBusiness ? recipientBiz?.id : null);
 
+  const recipientBizId = mode === "business" && toBusiness ? recipientBiz?.id ?? null : null;
+  const checkCoupon = async (code: string, price: number) => {
+    setChecking(true);
+    const { data } = await supabase.rpc("check_coupon", { p_code: code, p_price: price, p_recipient_business: recipientBizId });
+    setChecking(false);
+    const r = data as { ok: boolean; error?: string; code?: string; discount?: number; title?: string | null } | null;
+    if (r?.ok) { setCoupon({ code: r.code!, discount: Number(r.discount), title: r.title ?? null }); setCouponErr(""); return true; }
+    setCoupon(null); setCouponErr(ts(supportErr(r?.error ?? "error"))); return false;
+  };
+  // price changed (size, vehicle, chosen courier…): re-check the coupon so the discount stays right
+  useEffect(() => {
+    if (!coupon || !q) return;
+    const h = setTimeout(() => checkCoupon(coupon.code, q.price), 400);
+    return () => clearTimeout(h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q?.price, recipientBizId]);
+  useEffect(() => {
+    if (!session) return;
+    supabase.from("wallets").select("balance").eq("user_id", session.user.id).maybeSingle().then(({ data }) => setCreditBal(Number(data?.balance ?? 0)));
+  }, [session]);
+  const discount = coupon && q ? Math.min(coupon.discount, q.price) : 0;
+  const creditPart = useCredit && q ? Math.min(creditBal, Math.max(0, q.price - discount)) : 0;
+  const toPay = q ? Math.max(0, q.price - discount - creditPart) : 0;
+
   const markers = useMemo(() => [
     ...(pickup ? [{ id: "p", kind: "pickup" as const, ...pickup }] : []),
     ...(dropoff ? [{ id: "d", kind: "dropoff" as const, ...dropoff }] : []),
@@ -182,6 +215,8 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
     } else {
       await supabase.rpc("dispatch_shipment", { p_id: data.id });
     }
+    if (coupon) await supabase.rpc("apply_coupon", { p_id: data.id, p_code: coupon.code });
+    if (useCredit && creditBal > 0) await supabase.rpc("apply_credit", { p_id: data.id });
     router.replace(`/${mode}/shipments/${data.id}`);
   };
 
@@ -332,11 +367,47 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
         <CourierPicker pickup={pickup} vehicle={f.vehicle} km={km} size={f.package_size} fragile={f.is_fragile} cod={Number(f.cod_amount) || 0}
           settings={settings} selected={choice} onSelect={(id, c) => { setChoice(id); setChosen(c ?? null); }} onCouriers={setNearby} />
 
+        {q && (
+          <section className="card space-y-3 p-5">
+            <div className="flex items-center gap-2 font-bold"><Tag className="h-4 w-4 text-sun-700" />{ts("have_code")}</div>
+            {coupon ? (
+              <div className="flex items-center gap-3 rounded-2xl border-2 border-brand-600 bg-[#F1FAF6] px-4 py-3">
+                <div className="min-w-0 flex-1"><div className="font-extrabold tracking-wide" dir="ltr">{coupon.code}</div>{coupon.title && <div className="truncate text-sm text-ink-500">{coupon.title}</div>}</div>
+                <span className="chip bg-brand-600 text-white">−{money(discount)}</span>
+                <button type="button" onClick={() => { setCoupon(null); setCodeInput(""); }} aria-label={ts("remove")} className="grid h-8 w-8 place-items-center rounded-full hover:bg-white"><X className="h-4 w-4" /></button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input className="input flex-1 font-bold uppercase tracking-wide" dir="ltr" placeholder={ts("coupon_code")} value={codeInput}
+                  onChange={(e) => { setCodeInput(e.target.value); setCouponErr(""); }} />
+                <button type="button" className="btn-dark" disabled={!codeInput.trim() || checking} onClick={() => checkCoupon(codeInput.trim(), q.price)}>
+                  {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : ts("apply")}
+                </button>
+              </div>
+            )}
+            {couponErr && <div className="text-sm font-semibold text-red-600">{couponErr}</div>}
+            {session && creditBal > 0 && (
+              <label className="flex items-center gap-3 rounded-2xl bg-mint px-4 py-3 text-sm font-semibold">
+                <input type="checkbox" className="h-4 w-4 accent-brand-600" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} />
+                <Wallet className="h-4 w-4 text-brand-700" /><span className="flex-1">{ts("use_my_credit")}</span><span className="text-ink-500">{money(creditBal)} {ts("available")}</span>
+              </label>
+            )}
+            {(discount > 0 || creditPart > 0) && (
+              <div className="space-y-1 border-t border-slate-100 pt-3 text-sm">
+                <div className="flex justify-between text-ink-500"><span>{t("price")}</span><span className="tabular-nums">{money(q.price)}</span></div>
+                {discount > 0 && <div className="flex justify-between font-semibold text-brand-700"><span>{ts("discount")} · {coupon?.code}</span><span className="tabular-nums" dir="ltr">−{money(discount)}</span></div>}
+                {creditPart > 0 && <div className="flex justify-between font-semibold text-brand-700"><span>{ts("credit_used")}</span><span className="tabular-nums" dir="ltr">−{money(creditPart)}</span></div>}
+                <div className="flex justify-between pt-1 text-lg font-extrabold"><span>{ts("total_to_pay")}</span><span className="tabular-nums">{money(toPay)}</span></div>
+              </div>
+            )}
+          </section>
+        )}
+
         {err && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{err}</div>}
         {!session && <div className="rounded-xl bg-sky-50 p-3 text-sm text-sky-800">{tm("login_to_send")}</div>}
         <button className="btn-primary w-full py-4 text-base" disabled={busy || !pickup || !dropoff || (mode === "business" && !business)}>
           {busy ? <><Loader2 className="h-5 w-5 animate-spin" />{t("posting")}</>
-            : <><Radar className="h-5 w-5" />{choice && chosen ? `${tm("request_courier")} ${chosen.full_name}` : tm("send_to_all")} {q ? `· ${money(q.price)}` : ""}</>}
+            : <><Radar className="h-5 w-5" />{choice && chosen ? `${tm("request_courier")} ${chosen.full_name}` : tm("send_to_all")} {q ? `· ${money(toPay)}` : ""}</>}
         </button>
       </div>
     </form>
