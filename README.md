@@ -54,7 +54,7 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql), then each file in [`supabase/migrations/`](supabase/migrations) in order (002, 003, …). Every table, function and the storage bucket is prefixed with `wasel_`, so it can safely share a Supabase project with your other apps.
-3. (Recommended) **Database → Extensions → pg_cron**, then run:
+3. (Optional since migration 004 — couriers' heartbeats already widen the search) **Database → Extensions → pg_cron**, then run:
    ```sql
    select cron.schedule('wasel-dispatch-tick', '* * * * *', $$select wasel_dispatch_tick()$$);
    ```
@@ -71,6 +71,10 @@ Next.js 14 (App Router, TypeScript) · Tailwind · Supabase (Postgres, Auth, Rea
    ```
 7. Approve couriers from **Admin → Couriers** (unapproved couriers can't go online).
 8. (Optional) **Test data**: run [`supabase/seed/seed_test_data.sql`](supabase/seed/seed_test_data.sql) in the SQL Editor. It creates 15 accounts in Israeli cities (Tel Aviv, Ramat Gan, Petah Tikva, Jerusalem, Haifa) with B2C, C2C and B2B deliveries. All passwords: `Wasel123!` — e.g. `admin@wasel.test`, `cafe@wasel.test`, `noa@wasel.test`, `avi@wasel.test`. Re-running it resets the test data.
+
+9. (Optional) **Phone sign-up with SMS**: Supabase → Authentication → Providers → **Phone** → enable it and connect an SMS provider (Twilio, MessageBird, Vonage or Textlocal). Until then, the "Phone (SMS)" tab shows that SMS is not enabled and email works as before.
+
+10. (Optional) **Your contact details** on Contact us / Help desk: add `NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_SUPPORT_WHATSAPP` (e.g. 972521234567), `NEXT_PUBLIC_SUPPORT_EMAIL` and `NEXT_PUBLIC_SUPPORT_ADDRESS` in Vercel → Environment Variables, then redeploy.
 
 **Test the full loop:** open three browsers — business, courier (allow location), and the tracking link.
 

@@ -42,5 +42,23 @@ To deploy this phase
 - Customer home: map of couriers around you, couriers nearby, nearest ETA
 - Tests: 16 new DB checks (`supabase/tests/30_choose_courier.sql`) — DB suite **60/60 pass**; build passes
 
+## Account menus, refunds, coupons, help desk (migration 007)
+- **My account** (`/account`) with a menu per role:
+  - customer: Wasel credit, coupons, send, deliveries, refunds, help desk
+  - business: monthly stats, new delivery, history, team, discount codes, refunds, incoming B2B
+  - courier: weekly earnings, request payout, jobs map, documents & vehicle, report a problem
+  - admin: refunds, help-desk tickets, coupons, shipments, finance, settings
+- **Refunds**: the sender asks from the delivery page (reason, full or part amount, photo, card or Wasel credit);
+  admins approve or reject in `/admin/refunds`; approved refunds go to the ledger, credit refunds straight to the wallet
+- **Wasel credit**: wallet per user, filled by credit refunds, used at checkout, returned if a delivery is cancelled
+- **Coupons**: Wasel coupons (admin, paid by Wasel) and business discount codes (owner/manager, paid by the business,
+  valid on deliveries sent to that business); % or ₪, max discount, min price, total and per-person limits, end date.
+  The discount follows re-pricing and comes back if the delivery is cancelled; couriers always get their full earning
+- **Help desk** (`/help`): FAQ with search, your requests and refunds, write to us, chat thread with support;
+  admins answer in `/admin/tickets`. **Contact us** (`/contact`, guests too) and **About us** (`/about`)
+- Not built yet (shown in the design): invite-a-friend bonus, saved payment cards, bulk upload, invoices, courier bonuses,
+  automatic card refunds (card refunds are recorded; the money is returned through your payment provider)
+- Tests: 42 new DB checks (`supabase/tests/40_support_refunds_coupons.sql`) — DB suite **102/102 pass**; build passes
+
 ## Next: Phase 2 — Profiles & verification
 Phone OTP, password reset screen, business documents + admin approval, courier vehicles table (multiple vehicles, capacity, photos, approval), configurable verification rules.
