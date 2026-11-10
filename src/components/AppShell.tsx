@@ -61,7 +61,7 @@ function useNotifTitle() {
   const { ts } = useTs();
   const SUPPORT_N = ["refund_requested", "refund_approved", "refund_rejected", "ticket_new", "ticket_reply", "ticket_answered"];
   return (title: string) => SUPPORT_N.includes(title) ? ts(`n_${title}` as SKey)
-    : (["business_invite", "incoming_picked_up", "incoming_delivered", "courier_declined"].includes(title) ? tm(title as MKey) : notifTitle(title, t));
+    : (["business_invite", "incoming_picked_up", "incoming_delivered", "courier_declined", "courier_switched", "courier_unavailable_all", "courier_unavailable"].includes(title) ? tm(title as MKey) : notifTitle(title, t));
 }
 
 function Bell_() {
