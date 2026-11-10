@@ -6,7 +6,7 @@ import Map, { MapMarker } from "@/components/Map";
 import { Avatar, CourierCard, CourierInfo, Progress, ShareTracking, Spinner, StatusBadge, Stars, Timeline, vehicleEmoji } from "@/components/ui";
 import CourierPicker from "@/components/CourierPicker";
 import { useI18n, TKey } from "@/lib/i18n";
-import { useTm } from "@/lib/i18n-marketplace";
+import { useTm, MKey } from "@/lib/i18n-marketplace";
 import { useTs } from "@/lib/i18n-support";
 import { REFUNDABLE } from "@/lib/support";
 import { canCancel as cancellable } from "@/lib/delivery";
@@ -15,7 +15,12 @@ import { beep, errKey, useLiveShipment, useSettings } from "@/lib/hooks";
 import { etaMin, haversineKm, money } from "@/lib/geo";
 import type { Courier, Profile, Vehicle } from "@/lib/types";
 
-interface Direct { courier_id: string; name: string; avatar_url: string | null; vehicle: Vehicle; vehicle_model: string | null; rating: number; deliveries: number; offer_status: string | null; offer_at: string | null }
+interface Fallback { reason: string; from: string | null; action: "switched" | "broadcast" | "ask"; to?: string; at: string }
+interface Direct {
+  courier_id?: string; name?: string; avatar_url?: string | null; vehicle?: Vehicle; vehicle_model?: string | null; rating?: number; deliveries?: number;
+  offer_status?: string | null; offer_at?: string | null; fallback_mode?: string; last_fallback?: Fallback | null;
+}
+interface Suggestion { id: string; full_name: string; avatar_url: string | null; vehicle: Vehicle; vehicle_model: string | null; rating: number; rating_count: number; distance_km: number; price: number; same_price: boolean }
 
 /** Live view of one delivery for its sender (business member or individual customer). */
 export default function ShipmentDetail({ id, backHref }: { id: string; backHref: string }) {
@@ -25,6 +30,7 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
   const settings = useSettings();
   const { shipment: s, events, courierPos, trail, offers, reload } = useLiveShipment(id);
   const [direct, setDirect] = useState<Direct | null>(null);
+  const [sugg, setSugg] = useState<Suggestion[] | null>(null);
   const [picking, setPicking] = useState(false);
   const [pickBusy, setPickBusy] = useState(false);
   const [courier, setCourier] = useState<(CourierInfo & { lat: number | null; lng: number | null }) | null>(null);
@@ -53,11 +59,19 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
     if (s?.status === "searching" && "Notification" in window && Notification.permission === "default") Notification.requestPermission();
   }, [s?.status]);
 
-  // direct request: who was asked and did they answer?
+  // direct request: who was asked, did they answer, and what did the system do when they couldn't take it?
   useEffect(() => {
-    if (!s || s.status !== "searching" || s.dispatch_mode !== "direct") { setDirect(null); return; }
+    if (!s || s.status !== "searching") { setDirect(null); return; }
     supabase.rpc("direct_request", { p_id: s.id }).then(({ data }) => setDirect((data as Direct) ?? null));
   }, [s]);
+
+  // the chosen courier can't take it: load the best free alternatives (same price first)
+  const failedKey = s && s.status === "searching" && s.dispatch_mode === "direct" && direct && !(direct.offer_status === "pending") ? `${s.id}-${direct.courier_id}-${direct.offer_status}` : "";
+  useEffect(() => {
+    if (!failedKey || !s) { setSugg(null); return; }
+    supabase.rpc("suggest_couriers", { p_id: s.id, p_limit: 3 }).then(({ data }) => setSugg((data as Suggestion[]) ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [failedKey]);
 
   // load courier details when assigned
   useEffect(() => {
@@ -103,11 +117,13 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
   const directWaiting = !!direct && direct.offer_status === "pending" && !!direct.offer_at && now - new Date(direct.offer_at).getTime() < timeoutMs;
   const directLeft = direct?.offer_at ? Math.max(0, Math.ceil((timeoutMs - (now - new Date(direct.offer_at).getTime())) / 1000)) : 0;
   const directFailed = s.status === "searching" && s.dispatch_mode === "direct" && !directWaiting;
+  const fb = direct?.last_fallback ?? null;
+  const fbText = fb ? `${fb.from ?? ""} ${tm(`why_${fb.reason}` as MKey)}` : "";
   const requestCourier = async (cid: string) => {
     setPickBusy(true);
     const { error } = await supabase.rpc("request_courier", { p_id: s.id, p_courier: cid });
-    setPickBusy(false);
-    if (error) alert(t(errKey(error.message) as TKey)); else { setPicking(false); reload(); }
+    setPickBusy(false); setSugg(null);
+    if (error) alert(t(errKey(error.message) as TKey)); else { setPicking(false); reload(); }   // if he was just taken, the server already applied the fallback
   };
   const sendToAll = async () => { setPickBusy(true); await supabase.rpc("broadcast_shipment", { p_id: s.id }); setPickBusy(false); setPicking(false); reload(); };
   const searchSec = Math.floor((now - new Date(s.created_at).getTime()) / 1000);
@@ -146,17 +162,38 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
             {s.status === "searching" && s.dispatch_mode === "direct" && (
               <div className="absolute inset-x-3 bottom-3 z-[500] rounded-3xl bg-white p-4 text-ink-900 shadow-[0_12px_28px_rgba(23,38,46,.18)]">
                 <div className="flex items-center gap-3">
-                  {direct && <Avatar src={direct.avatar_url} name={direct.name} size={44} />}
+                  {direct?.name && <Avatar src={direct.avatar_url} name={direct.name} size={44} />}
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold">{directWaiting ? tm("waiting_courier") : direct?.offer_status === "declined" ? tm("courier_declined") : tm("courier_no_answer")}</div>
-                    {direct && <div className="truncate text-xs text-ink-500">{direct.name} · {vehicleEmoji(direct.vehicle)} {direct.vehicle_model ?? ""} · ★ {Number(direct.rating).toFixed(1)}</div>}
+                    <div className="font-bold">{directWaiting ? tm("waiting_courier") : fb ? fbText : direct?.offer_status === "declined" ? tm("courier_declined") : tm("courier_no_answer")}</div>
+                    {direct?.name && <div className="truncate text-xs text-ink-500">{direct.name} · {vehicleEmoji(direct.vehicle)} {direct.vehicle_model ?? ""} · ★ {Number(direct.rating).toFixed(1)}</div>}
                   </div>
                   {directWaiting && <div className="font-mono text-lg tabular-nums">{directLeft}s</div>}
                 </div>
+                {directWaiting && fb?.action === "switched" && (
+                  <div className="mt-3 rounded-2xl bg-sun-50 p-3 text-sm font-semibold text-sun-700">{fbText} — {tm("fb_asked")} {fb.to} {tm("fb_instead")}</div>
+                )}
                 {directFailed && (
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" disabled={pickBusy} onClick={() => setPicking(true)} className="btn bg-ink-100 py-2.5 text-ink-900">{tm("choose_another")}</button>
-                    <button type="button" disabled={pickBusy} onClick={sendToAll} className="btn-primary py-2.5">{tm("send_to_all")}</button>
+                  <div className="mt-3 space-y-2">
+                    {sugg && sugg.length > 0 && <div className="text-xs font-bold uppercase text-ink-500">{tm("fb_pick_msg")}</div>}
+                    {sugg?.map((c) => (
+                      <button type="button" key={c.id} disabled={pickBusy} onClick={() => requestCourier(c.id)}
+                        className="flex w-full items-center gap-3 rounded-2xl border-2 border-[#E6EEEB] p-2.5 text-start hover:border-brand-600 hover:bg-[#F1FAF6]">
+                        <Avatar src={c.avatar_url} name={c.full_name} size={38} />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-bold">{c.full_name} <span className="text-sun-700">★ {Number(c.rating).toFixed(1)}</span></div>
+                          <div className="text-xs text-ink-500">{vehicleEmoji(c.vehicle)} {t(c.vehicle)} · {etaMin(Number(c.distance_km) * 1.3, c.vehicle)} {tm("min_away")}</div>
+                        </div>
+                        <div className="text-end">
+                          <div className="font-extrabold tabular-nums">{money(c.price)}</div>
+                          <span className={`chip px-2 py-0.5 text-[10px] ${c.same_price ? "bg-brand-50 text-brand-700" : "bg-sun-50 text-sun-700"}`}>{tm(c.same_price ? "same_price" : "other_price")}</span>
+                        </div>
+                      </button>
+                    ))}
+                    {sugg && sugg.length === 0 && <div className="text-sm text-ink-500">{tm("no_alternatives")}</div>}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" disabled={pickBusy} onClick={() => setPicking(true)} className="btn bg-ink-100 py-2.5 text-ink-900">{tm("see_all_couriers")}</button>
+                      <button type="button" disabled={pickBusy} onClick={sendToAll} className="btn-primary py-2.5">{tm("send_to_all")}</button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -168,6 +205,7 @@ export default function ShipmentDetail({ id, backHref }: { id: string; backHref:
                   <Radar className="h-6 w-6 text-brand-600" />
                 </div>
                 <div className="flex-1">
+                  {fb?.action === "broadcast" && <div className="mb-1 text-xs font-semibold text-sun-700">{fbText}. {tm("fb_broadcast_msg")}</div>}
                   <div className="font-bold">{t("searching_title")}</div>
                   <div className="text-xs text-ink-500">{offers} {t("notified")} · {t("radius")} {Number(s.dispatch_radius_km)} {t("km")} · {t("round")} {s.dispatch_round}</div>
                 </div>

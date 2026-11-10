@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Radar, Star } from "lucide-react";
 import { Avatar, vehicleEmoji } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
@@ -23,6 +23,10 @@ export default function CourierPicker({ pickup, vehicle, km, size, fragile, cod,
   const { t } = useI18n();
   const { tm } = useTm();
   const [list, setList] = useState<NearbyCourier[] | null>(null);
+  const [gone, setGone] = useState<string | null>(null);   // the chosen courier was just booked by someone else
+  const sel = useRef(selected);
+  sel.current = selected;
+  const listRef = useRef<NearbyCourier[] | null>(null);
 
   useEffect(() => {
     if (!pickup) { setList(null); onCouriers?.([]); return; }
@@ -31,14 +35,20 @@ export default function CourierPicker({ pickup, vehicle, km, size, fragile, cod,
       .then(({ data }) => {
         if (!alive) return;
         const rows = (data as NearbyCourier[]) ?? [];
-        setList(rows); onCouriers?.(rows);
-        if (selected && !rows.some((r) => r.id === selected)) onSelect(null);   // chosen courier went offline / got busy
+        // chosen courier went offline, got busy or was just booked by another customer: say so and fall back to "send to all"
+        if (sel.current && !rows.some((r) => r.id === sel.current)) {
+          const was = listRef.current?.find((r) => r.id === sel.current);
+          setGone(was?.full_name ?? null);
+          onSelect(null);
+        }
+        listRef.current = rows; setList(rows); onCouriers?.(rows);
       });
     load();
-    const i = setInterval(() => { if (!document.hidden) load(); }, 15000);
+    // refresh faster while a courier is chosen, so a lost courier is noticed before sending
+    const i = setInterval(() => { if (!document.hidden) load(); }, sel.current ? 6000 : 15000);
     return () => { alive = false; clearInterval(i); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickup?.lat, pickup?.lng, vehicle]);
+  }, [pickup?.lat, pickup?.lng, vehicle, !!selected]);
 
   const priceFor = (v: Vehicle) => (settings && km ? quote(settings, km, size, v, fragile, cod).price : null);
   const allPrice = priceFor(vehicle);
@@ -49,6 +59,7 @@ export default function CourierPicker({ pickup, vehicle, km, size, fragile, cod,
         <div className="text-xl font-extrabold">{tm("choose_courier")}</div>
         <p className="text-sm text-ink-500">{tm("choose_courier_hint")}</p>
       </div>
+      {gone && <div className="rounded-2xl bg-sun-50 p-3 text-sm font-semibold text-sun-700">{gone} {tm("picked_gone")}</div>}
       {!pickup && <div className="rounded-2xl bg-mint p-4 text-sm text-ink-500">{tm("enter_pickup_first")}</div>}
       {pickup && (
         <>
@@ -67,7 +78,7 @@ export default function CourierPicker({ pickup, vehicle, km, size, fragile, cod,
               const p = priceFor(c.vehicle);
               const on = selected === c.id;
               return (
-                <button type="button" key={c.id} onClick={() => onSelect(c.id, c)}
+                <button type="button" key={c.id} onClick={() => { setGone(null); onSelect(c.id, c); }}
                   className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-start transition ${on ? "border-brand-600 bg-[#F1FAF6]" : "border-[#E6EEEB] hover:bg-mint"}`}>
                   <div className="relative">
                     <Avatar src={c.avatar_url} name={c.full_name} size={48} />
