@@ -60,5 +60,19 @@ To deploy this phase
   automatic card refunds (card refunds are recorded; the money is returned through your payment provider)
 - Tests: 42 new DB checks (`supabase/tests/40_support_refunds_coupons.sql`) — DB suite **102/102 pass**; build passes
 
+## Smart courier choice — two customers, one courier (migration 008)
+- **Hold**: a courier asked directly is reserved for that customer while the request is open (offer timeout);
+  he is hidden from other customers' lists and from "send to all" rounds, so he never gets two direct requests
+- **First come, first served**: requests for the same courier are serialized with a row lock — if two customers tap him
+  in the same second, only the first gets him
+- **Customer's fallback** (chosen on the send form, kept through sign-up):
+  next best courier automatically at the same price or less (default, up to 3 tries, then send to all) ·
+  send to all nearby · let me choose (top 3 suggestions, same-price first, one-tap request)
+- Fallback also runs when the courier declines, does not answer in time, accepts another delivery, or goes offline
+- Ranking: distance + rating (1.5 km for every 0.1 star below 4.8; new couriers count as 4.6); the price never goes up without the customer
+- The delivery page explains what happened ("Avi was just booked by another customer — we asked Dana instead")
+- The courier list on the send form refreshes every 6 s while a courier is chosen and says if he was just booked
+- Tests: 23 new DB checks (`supabase/tests/50_smart_courier_choice.sql`) — DB suite **126/126 pass**; build passes
+
 ## Next: Phase 2 — Profiles & verification
 Phone OTP, password reset screen, business documents + admin approval, courier vehicles table (multiple vehicles, capacity, photos, approval), configurable verification rules.
