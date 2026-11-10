@@ -33,7 +33,7 @@ interface Biz { id: string; business_name: string; logo_url: string | null; addr
  * Visitors who are not logged in can fill everything in; the draft is kept while they sign up.
  * The server derives the final delivery type and price; the values shown here are a preview.
  */
-interface Draft { pickup: Place | null; dropoff: Place | null; f: Record<string, unknown>; choice: string | null }
+interface Draft { pickup: Place | null; dropoff: Place | null; f: Record<string, unknown>; choice: string | null; fallback?: "next_best" | "broadcast" | "ask_me" }
 export default function DeliveryForm({ mode }: { mode: "business" | "customer" }) {
   const { session, profile, business } = useAuth();
   const { t, lang } = useI18n();
@@ -60,6 +60,8 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
   const [chosen, setChosen] = useState<NearbyCourier | null>(null);
   const [nearby, setNearby] = useState<NearbyCourier[]>([]);
   const [restored, setRestored] = useState(false);
+  // what to do if the chosen courier is taken, declines, does not answer or goes offline
+  const [fallback, setFallback] = useState<"next_best" | "broadcast" | "ask_me">("next_best");
   // coupon & Wasel credit (checked live; applied on the server right after the delivery is created)
   const { ts } = useTs();
   const [codeInput, setCodeInput] = useState("");
@@ -78,6 +80,7 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
     if (d.dropoff) setDropoff(d.dropoff);
     setF((x) => ({ ...x, ...(d.f as Partial<typeof x>) }));
     setChoice(d.choice ?? null);
+    if (d.fallback) setFallback(d.fallback);
     setRestored(true);
     clearDraft();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,7 +193,7 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
     e.preventDefault();
     if (!pickup || !dropoff) return;
     if (!session) {   // visitor: keep the details and ask them to sign up / log in
-      saveDraft({ pickup, dropoff, f, choice } satisfies Draft);
+      saveDraft({ pickup, dropoff, f, choice, fallback } satisfies Draft);
       router.push("/signup?next=" + encodeURIComponent("/customer/new"));
       return;
     }
@@ -206,12 +209,14 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
       recipient_name: f.recipient_name, recipient_phone: f.recipient_phone, package_size: f.package_size, package_desc: f.package_desc || null,
       weight_kg: f.weight_kg ? Number(f.weight_kg) : null, vehicle: f.vehicle, is_fragile: f.is_fragile, cod_amount: Number(f.cod_amount) || 0,
       notes: f.notes || null, scheduled_at: f.scheduled_at ? new Date(f.scheduled_at).toISOString() : null,
-      dispatch_mode: choice ? "direct" : "broadcast",
+      dispatch_mode: choice ? "direct" : "broadcast", fallback_mode: fallback,
     }).select("id").single();
     if (error || !data) { setErr(error?.message || t("error")); setBusy(false); return; }
     if (choice) {
+      // the server serializes requests for the same courier; if someone else got him first it follows the
+      // customer's fallback (next best courier / send to all / show suggestions) and the delivery page explains it
       const { error: rq } = await supabase.rpc("request_courier", { p_id: data.id, p_courier: choice });
-      if (rq) await supabase.rpc("broadcast_shipment", { p_id: data.id });   // courier just went offline/busy: ask everyone
+      if (rq) await supabase.rpc("broadcast_shipment", { p_id: data.id });   // unexpected error: do not leave it waiting
     } else {
       await supabase.rpc("dispatch_shipment", { p_id: data.id });
     }
@@ -366,6 +371,19 @@ export default function DeliveryForm({ mode }: { mode: "business" | "customer" }
 
         <CourierPicker pickup={pickup} vehicle={f.vehicle} km={km} size={f.package_size} fragile={f.is_fragile} cod={Number(f.cod_amount) || 0}
           settings={settings} selected={choice} onSelect={(id, c) => { setChoice(id); setChosen(c ?? null); }} onCouriers={setNearby} />
+
+        {choice && chosen && (
+          <section className="card space-y-2 p-5" role="radiogroup" aria-label={tm("fb_title")}>
+            <div className="font-bold">{tm("fb_title")}</div>
+            {([["next_best", tm("fb_next_best"), tm("fb_next_best_hint")], ["broadcast", tm("fb_broadcast"), ""], ["ask_me", tm("fb_ask_me"), ""]] as const).map(([k, l, hint]) => (
+              <button type="button" key={k} role="radio" aria-checked={fallback === k} onClick={() => setFallback(k)}
+                className={`flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-start text-sm font-semibold transition ${fallback === k ? "border-brand-600 bg-[#F1FAF6]" : "border-[#E6EEEB]"}`}>
+                <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${fallback === k ? "border-brand-600" : "border-slate-300"}`}>{fallback === k && <span className="h-2.5 w-2.5 rounded-full bg-brand-600" />}</span>
+                <span className="flex-1">{l}</span>{hint && <span className="chip bg-brand-50 text-brand-700">{hint}</span>}
+              </button>
+            ))}
+          </section>
+        )}
 
         {q && (
           <section className="card space-y-3 p-5">
