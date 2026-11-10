@@ -51,15 +51,20 @@ select wasel_request_courier(current_setting('test.ship')::uuid, '00000000-0000-
 select pg_temp.ok((select price from wasel_shipments where id = current_setting('test.ship')::uuid) > current_setting('test.price_moto')::numeric,
   'choosing a car courier re-prices the delivery for a car');
 select pg_temp.ok((wasel_direct_request(current_setting('test.ship')::uuid)->>'offer_status') = 'pending', 'sender sees the request is pending');
-do $$ begin perform wasel_request_courier(current_setting('test.ship')::uuid, '00000000-0000-0000-0000-0000000030c3'); raise exception 'FAIL: busy';
-exception when others then if sqlerrm like 'FAIL%' then raise; end if; raise notice 'PASS: a busy courier cannot be requested'; end $$;
+select pg_temp.ok((wasel_request_courier(current_setting('test.ship')::uuid, '00000000-0000-0000-0000-0000000030c3')->>'reason') = 'courier_busy',
+  'a busy courier cannot be requested (the open request stays)');
+select pg_temp.ok((select requested_courier_id from wasel_shipments where id = current_setting('test.ship')::uuid) = '00000000-0000-0000-0000-0000000030c2',
+  'the open request to the chosen courier is kept');
 
 -- the other free courier does not get it through the heartbeat
 select pg_temp.as_user('00000000-0000-0000-0000-0000000030c1');
 select wasel_courier_heartbeat();
 select pg_temp.ok(not exists(select 1 from wasel_shipment_offers where courier_id = auth.uid()), 'other couriers do not receive a direct request');
 
--- chosen courier declines -> sender is told
+-- chosen courier declines -> sender is told (this sender chose "let me choose" as the fallback)
+reset role;
+update wasel_shipments set fallback_mode = 'ask_me' where id = current_setting('test.ship')::uuid;
+set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-0000000030c2');
 select wasel_decline_offer(current_setting('test.ship')::uuid);
 select pg_temp.as_user('00000000-0000-0000-0000-0000000030a1');
